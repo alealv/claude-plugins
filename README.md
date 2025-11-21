@@ -23,7 +23,7 @@ Or from source:
 ```bash
 git clone https://github.com/alealv/claude-tools.git
 cd claude-tools
-uv sync --all-groups
+uv tool install -e .
 ```
 
 ## Quick Start

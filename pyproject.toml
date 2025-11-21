@@ -41,7 +41,7 @@ Gitter = "https://gitter.im/claude-tools/community"
 Funding = "https://github.com/sponsors/alealv"
 
 [project.scripts]
-claude-tools = "claude_tools.cli:main"
+claude-tools = "claude_tools:main"
 
 [tool.pdm.version]
 source = "call"
