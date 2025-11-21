@@ -28,7 +28,7 @@ claude/
 │   └── ...
 ├── hooks/                        # Hook scripts and examples
 │   └── ...
-├── CLAUDE.md                     # This file
+├── README.md                     # Main documentation
 └── .gitignore
 ```
 
