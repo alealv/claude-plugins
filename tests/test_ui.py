@@ -112,23 +112,23 @@ class TestInstallUI:
 
     def test_install_ui_creation(self, sample_items: dict) -> None:
         """InstallUI can be created with items."""
-        ui = InstallUI(sample_items)
+        ui = InstallUI(sample_items, "/target/project")
 
         assert ui is not None
         assert hasattr(ui, "state")
-        assert hasattr(ui, "items")
+        assert hasattr(ui, "items_by_type")
 
     def test_install_ui_state_initialization(self, sample_items: dict) -> None:
         """InstallUI initializes state correctly."""
-        ui = InstallUI(sample_items)
+        ui = InstallUI(sample_items, "/target/project")
 
         assert ui.state.current_tab == 0
         assert ui.state.focus == Focus.LIST
-        assert isinstance(ui.state.selected_items, set)
+        assert isinstance(ui.state.selected_items, dict)
 
     def test_get_current_items_commands(self, sample_items: dict) -> None:
         """Get items for commands tab."""
-        ui = InstallUI(sample_items)
+        ui = InstallUI(sample_items, "/target/project")
         ui.state.current_tab = 0  # Commands tab
 
         current = ui.get_current_items()
@@ -138,7 +138,7 @@ class TestInstallUI:
 
     def test_get_current_items_skills(self, sample_items: dict) -> None:
         """Get items for skills tab."""
-        ui = InstallUI(sample_items)
+        ui = InstallUI(sample_items, "/target/project")
         ui.state.current_tab = 1  # Skills tab
 
         current = ui.get_current_items()
@@ -148,7 +148,7 @@ class TestInstallUI:
 
     def test_handle_up_navigation(self, sample_items: dict) -> None:
         """Handle up arrow key navigation."""
-        ui = InstallUI(sample_items)
+        ui = InstallUI(sample_items, "/target/project")
         ui.state.current_tab = 0  # Commands tab
         ui.state.current_row = 1
 
@@ -158,7 +158,7 @@ class TestInstallUI:
 
     def test_handle_down_navigation(self, sample_items: dict) -> None:
         """Handle down arrow key navigation."""
-        ui = InstallUI(sample_items)
+        ui = InstallUI(sample_items, "/target/project")
         ui.state.current_tab = 0  # Commands tab
         ui.state.current_row = 0
 
@@ -168,7 +168,7 @@ class TestInstallUI:
 
     def test_handle_tab_switching(self, sample_items: dict) -> None:
         """Handle tab switching."""
-        ui = InstallUI(sample_items)
+        ui = InstallUI(sample_items, "/target/project")
         initial_tab = ui.state.current_tab
 
         ui.handle_tab()
@@ -177,33 +177,36 @@ class TestInstallUI:
 
     def test_handle_space_toggles_selection(self, sample_items: dict) -> None:
         """Handle space key to toggle item selection."""
-        ui = InstallUI(sample_items)
+        ui = InstallUI(sample_items, "/target/project")
         ui.state.current_tab = 0  # Commands tab
         ui.state.current_row = 0
 
         items = ui.get_current_items()
         if items:
-            item_name = items[0].name
+            item = items[0]
+            key = f"{item.type.value}:{item.name}"
 
             # Initially not selected
-            assert item_name not in ui.state.selected_items
+            assert not ui.state.selected_items.get(key, False)
 
             # Toggle selection
             ui.handle_space()
-            assert item_name in ui.state.selected_items
+            assert ui.state.selected_items.get(key) is True
 
             # Toggle again to deselect
             ui.handle_space()
-            assert item_name not in ui.state.selected_items
+            assert ui.state.selected_items.get(key) is False
 
     def test_get_selected_items(self, sample_items: dict) -> None:
         """Get all selected items across tabs."""
-        ui = InstallUI(sample_items)
+        ui = InstallUI(sample_items, "/target/project")
 
         # Select some items
         commands = sample_items[ConfigType.COMMANDS]
         if commands:
-            ui.state.selected_items.add(commands[0].name)
+            item = commands[0]
+            key = f"{item.type.value}:{item.name}"
+            ui.state.selected_items[key] = True
 
         selected = ui.get_selected_items()
 
@@ -212,7 +215,7 @@ class TestInstallUI:
 
     def test_ui_draw_does_not_crash(self, sample_items: dict) -> None:
         """UI draw method doesn't crash with valid items."""
-        ui = InstallUI(sample_items)
+        ui = InstallUI(sample_items, "/target/project")
 
         # Mock stdout to prevent actual output
         with patch("sys.stdout"):
@@ -231,7 +234,7 @@ class TestInstallUI:
             ConfigType.HOOKS: [],
         }
 
-        ui = InstallUI(empty_items)
+        ui = InstallUI(empty_items, "/target/project")
         assert ui is not None
 
         current = ui.get_current_items()
@@ -262,7 +265,7 @@ class TestUINavigation:
                 ConfigType.HOOKS: [],
             }
 
-        ui = InstallUI(sample_items)
+        ui = InstallUI(sample_items, "/target/project")
 
         # Start with LIST focus
         assert ui.state.focus == Focus.LIST

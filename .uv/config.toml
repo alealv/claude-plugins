@@ -1,0 +1,5 @@
+# UV configuration for this project
+# See: https://docs.astral.sh/uv/configuration/
+
+# Store virtual environment in project root
+venv-path = ".venv"

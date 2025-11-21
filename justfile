@@ -83,7 +83,7 @@ default:
 
 # Type check code (ty)
 @types:
-    uv run ty src
+    uv run ty check src
 
 # Run all quality checks
 @quality: check-fmt check-lint types

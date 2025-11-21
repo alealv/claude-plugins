@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 from claude_tools._internal.installer import ConfigType, ConfigItem
@@ -41,12 +41,7 @@ class UIState:
     current_row: int = 0
     scroll_offset: int = 0
     focus: Focus = Focus.LIST
-    selected_items: dict[str, bool] = None
-
-    def __post_init__(self) -> None:
-        """Initialize selected_items if None."""
-        if self.selected_items is None:
-            self.selected_items = {}
+    selected_items: dict[str, bool] = field(default_factory=dict)
 
 
 class InstallUI:

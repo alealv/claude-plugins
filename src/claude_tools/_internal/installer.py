@@ -211,6 +211,8 @@ class Installer:
 
         # Merge hook settings from each hook
         for item in hook_items:
+            if item.target_path is None:
+                continue
             hook_settings_file = item.target_path / "settings.json"
             if hook_settings_file.exists():
                 try:
