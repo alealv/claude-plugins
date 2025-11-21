@@ -3,7 +3,6 @@
 # Configured for UV package manager: https://docs.astral.sh/uv/
 
 set shell := ["bash", "-c"]
-set dotenv-load := true
 
 # Show common recipes and usage tips
 default:
@@ -21,6 +20,7 @@ default:
     @echo ""
     @echo "📖 All available recipes:"
     @echo "  just --list         Show all recipes (grouped by category)"
+    @echo "  just --groups       Show all available groups"
     @echo "  just --show RECIPE  Show recipe contents"
     @echo ""
     @echo "🚀 Guided Help:"
@@ -29,115 +29,112 @@ default:
     @echo "  just help test      Testing workflow guide"
     @echo "  just help release   Release workflow guide"
 
-# ============================================================================
-# SETUP & INSTALL
-# ============================================================================
-
 # Install project with all dependency groups
-@setup:
+[group: 'setup']
+setup:
     uv sync --all-groups
 
 # Clean reinstall (removes uv.lock)
-@reinstall:
+[group: 'setup']
+reinstall:
     rm -f uv.lock
     uv sync --all-groups
 
 # Install pre-commit hooks
-@install-hooks:
+[group: 'setup']
+install-hooks:
     uv run pre-commit install
 
-# ============================================================================
-# DEVELOPMENT
-# ============================================================================
-
 # Interactive Python REPL
-@repl:
+[group: 'dev']
+repl:
     uv run python
 
-# ============================================================================
-# CODE QUALITY
-# ============================================================================
-
 # Format code (Ruff)
-@fmt:
+[group: 'quality']
+fmt:
     uv run ruff format src tests
 
 # Check formatting only
-@check-fmt:
+[group: 'quality']
+check-fmt:
     uv run ruff format --check src tests
 
 # Lint code (Ruff)
-@lint:
+[group: 'quality']
+lint:
     uv run ruff check --fix src tests
 
 # Check linting only
-@check-lint:
+[group: 'quality']
+check-lint:
     uv run ruff check src tests
 
 # Type check code (ty)
-@types:
+[group: 'quality']
+types:
     uv run ty check src
 
 # Run all quality checks
-@quality: check-fmt check-lint types
-
-# ============================================================================
-# TESTING
-# ============================================================================
+[group: 'quality']
+quality: check-fmt check-lint types
 
 # Run all tests
-@test:
+[group: 'test']
+test:
     uv run pytest -v
 
 # Run tests with coverage report
-@test-cov:
+[group: 'test']
+test-cov:
     uv run pytest --cov=src/claude_tools --cov-report=html --cov-report=term
 
 # Run specific test file
-@test-file FILE:
+[group: 'test']
+test-file FILE:
     uv run pytest -v {{ FILE }}
 
 # Run tests matching pattern
-@test-pattern PATTERN:
+[group: 'test']
+test-pattern PATTERN:
     uv run pytest -v -k "{{ PATTERN }}"
 
 # Run tests in parallel (faster)
-@test-parallel:
+[group: 'test']
+test-parallel:
     uv run pytest -v -n auto
 
 # Watch mode (auto-run on file changes)
-@test-watch:
+[group: 'test']
+test-watch:
     uv run pytest-watch -- -v
 
-# ============================================================================
-# MAINTENANCE
-# ============================================================================
-
 # Clean all generated files and caches
-@clean:
+[group: 'maintenance']
+clean:
     find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
     find . -type d -name .pytest_cache .mypy_cache .ruff_cache -delete 2>/dev/null || true
     find . -type f -name .coverage -delete 2>/dev/null || true
     rm -rf build dist *.egg-info htmlcov site .coverage*
 
 # Update all dependencies
-@update:
+[group: 'maintenance']
+update:
     uv sync --upgrade
 
 # Check for outdated dependencies
-@check-deps:
+[group: 'maintenance']
+check-deps:
     uv pip list --outdated
 
 # Show current version
-@version:
+[group: 'maintenance']
+version:
     @uv run python -c "from claude_tools import __version__; print(__version__)"
 
-# ============================================================================
-# BUILD & PUBLISH
-# ============================================================================
-
-# Build and publish operations
-@build OPERATION="":
+# Build distribution packages (default: wheel + sdist)
+[group: 'build']
+build OPERATION="":
     bash -c 'case "{{ OPERATION }}" in \
       "") uv run python -m build; ;; \
       wheel) uv run python -m build --wheel; ;; \
@@ -145,20 +142,18 @@ default:
       *) echo "Unknown operation: {{ OPERATION }}"; exit 1; ;; \
     esac'
 
-# Publish distribution packages
-@publish OPERATION="":
+# Publish distribution packages (default: PyPI)
+[group: 'build']
+publish OPERATION="":
     bash -c 'case "{{ OPERATION }}" in \
       "") uv run python -m twine upload dist/*; ;; \
       test) uv run python -m twine upload --repository testpypi dist/*; ;; \
       *) echo "Unknown operation: {{ OPERATION }}"; exit 1; ;; \
     esac'
 
-# ============================================================================
-# DOCS
-# ============================================================================
-
-# Documentation operations
-@docs OPERATION="":
+# Documentation operations (default: build)
+[group: 'docs']
+docs OPERATION="":
     bash -c 'case "{{ OPERATION }}" in \
       "") uv run mkdocs build; ;; \
       build) uv run mkdocs build; ;; \
@@ -168,71 +163,71 @@ default:
       *) echo "Unknown operation: {{ OPERATION }}"; exit 1; ;; \
     esac'
 
-# ============================================================================
-# GIT & UTILITIES
-# ============================================================================
-
 # Run all pre-commit hooks
-@pre-commit:
+[group: 'git']
+pre-commit:
     uv run pre-commit run --all-files
 
 # Run pre-commit on staged files
-@pre-commit-staged:
+[group: 'git']
+pre-commit-staged:
     uv run pre-commit run
 
-# Run quality checks + tests
-@check: quality test
-
 # Generate changelog
-@changelog:
+[group: 'git']
+changelog:
     uv run git-changelog --config-file .gitchangelog.cfg CHANGELOG.md
 
-# ============================================================================
-# INFO & DEBUG
-# ============================================================================
+# Run quality checks + tests
+[group: 'quality']
+[group: 'test']
+check: quality test
 
 # Show project information
-@info:
-    echo "Project: claude-tools"
-    echo "Root: {{ justfile_directory() }}"
-    uv python --version
-    uv --version
+[group: 'info']
+info:
+    @echo "Project: claude-tools"
+    @echo "Root: {{ justfile_directory() }}"
+    @uv python --version
+    @uv --version
 
 # Show available Python versions
-@python-versions:
+[group: 'info']
+python-versions:
     uv python list
 
 # List installed packages
-@packages:
+[group: 'info']
+packages:
     uv pip list
 
 # Show environment details
-@env:
-    echo "Working directory: $(pwd)"
-    echo "Python: $(which python3)"
-    python3 --version
-    uv --version
-    uv pip list
+[group: 'info']
+env:
+    @echo "Working directory: $(pwd)"
+    @echo "Python: $(which python3)"
+    @python3 --version
+    @uv --version
+    @uv pip list
 
 # Count lines of code
-@loc:
-    find src tests -name "*.py" -exec wc -l {} + 2>/dev/null | tail -1 || echo "No Python files found"
+[group: 'info']
+loc:
+    @find src tests -name "*.py" -exec wc -l {} + 2>/dev/null | tail -1 || echo "No Python files found"
 
 # Show git status
-@status:
+[group: 'info']
+status:
     git status
 
 # Show recent commits
-@recent LIMIT="10":
+[group: 'info']
+recent LIMIT="10":
     git log --oneline -{{ LIMIT }}
 
-# ============================================================================
-# HELP & DOCUMENTATION
-# ============================================================================
-
 # Show help for a workflow (setup, test, release)
-@help WORKFLOW="":
-    bash -c 'case "{{ WORKFLOW }}" in \
+help WORKFLOW="":
+    @bash -c 'case "{{ WORKFLOW }}" in \
       setup) \
         echo "🏗️ SETUP WORKFLOW"; \
         echo ""; \
