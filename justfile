@@ -14,7 +14,10 @@ default:
     @echo "  just test           Run all tests"
     @echo "  just fmt            Format code"
     @echo "  just quality        All code quality checks"
-    @echo "  just ci             Full CI pipeline (clean, setup, check)"
+    @echo "  just clean          Clean generated files and caches"
+    @echo "  just update         Update all dependencies"
+    @echo "  just build          Build and publish operations"
+    @echo "  just docs           Documentation operations"
     @echo ""
     @echo "📖 All available recipes:"
     @echo "  just --list         Show all recipes (grouped by category)"
@@ -107,50 +110,6 @@ default:
     uv run pytest-watch -- -v
 
 # ============================================================================
-# DOCS
-# ============================================================================
-
-# Build documentation
-@docs-build:
-    uv run mkdocs build
-
-# Serve docs locally (http://localhost:8000)
-@docs-serve:
-    uv run mkdocs serve
-
-# Check docs with strict mode
-@docs-check:
-    uv run mkdocs build --strict
-
-# Deploy docs to GitHub Pages
-@docs-deploy:
-    uv run mkdocs gh-deploy
-
-# ============================================================================
-# BUILD & PUBLISH
-# ============================================================================
-
-# Build distribution packages
-@build:
-    uv run python -m build
-
-# Build wheel only
-@build-wheel:
-    uv run python -m build --wheel
-
-# Build sdist only
-@build-sdist:
-    uv run python -m build --sdist
-
-# Upload to TestPyPI (dry run)
-@publish-test:
-    uv run python -m twine upload --repository testpypi dist/*
-
-# Upload to PyPI (production)
-@publish:
-    uv run python -m twine upload dist/*
-
-# ============================================================================
 # MAINTENANCE
 # ============================================================================
 
@@ -174,7 +133,43 @@ default:
     @uv run python -c "from claude_tools import __version__; print(__version__)"
 
 # ============================================================================
-# GIT & CI
+# BUILD & PUBLISH
+# ============================================================================
+
+# Build and publish operations
+@build OPERATION="":
+    bash -c 'case "{{ OPERATION }}" in \
+      "") uv run python -m build; ;; \
+      wheel) uv run python -m build --wheel; ;; \
+      sdist) uv run python -m build --sdist; ;; \
+      *) echo "Unknown operation: {{ OPERATION }}"; exit 1; ;; \
+    esac'
+
+# Publish distribution packages
+@publish OPERATION="":
+    bash -c 'case "{{ OPERATION }}" in \
+      "") uv run python -m twine upload dist/*; ;; \
+      test) uv run python -m twine upload --repository testpypi dist/*; ;; \
+      *) echo "Unknown operation: {{ OPERATION }}"; exit 1; ;; \
+    esac'
+
+# ============================================================================
+# DOCS
+# ============================================================================
+
+# Documentation operations
+@docs OPERATION="":
+    bash -c 'case "{{ OPERATION }}" in \
+      "") uv run mkdocs build; ;; \
+      build) uv run mkdocs build; ;; \
+      serve) uv run mkdocs serve; ;; \
+      check) uv run mkdocs build --strict; ;; \
+      deploy) uv run mkdocs gh-deploy; ;; \
+      *) echo "Unknown operation: {{ OPERATION }}"; exit 1; ;; \
+    esac'
+
+# ============================================================================
+# GIT & UTILITIES
 # ============================================================================
 
 # Run all pre-commit hooks
@@ -187,9 +182,6 @@ default:
 
 # Run quality checks + tests
 @check: quality test
-
-# Full CI pipeline
-@ci: clean setup check
 
 # Generate changelog
 @changelog:
@@ -247,7 +239,7 @@ default:
         echo "First time setup:"; \
         echo "  1. just setup           Install project with all dependencies"; \
         echo "  2. just install-hooks   Setup git pre-commit hooks"; \
-        echo "  3. just ci              Run full CI to verify setup"; \
+        echo "  3. just check           Quality checks + tests"; \
         echo ""; \
         echo "Troubleshooting:"; \
         echo "  just clean              Remove all generated files"; \
@@ -273,24 +265,25 @@ default:
         echo "🚀 RELEASE WORKFLOW"; \
         echo ""; \
         echo "Preparation:"; \
-        echo "  just ci                 Full CI pipeline (all checks + tests)"; \
+        echo "  just check              Quality checks + tests"; \
         echo "  just check-deps         Check for outdated dependencies"; \
         echo "  just update             Update all dependencies"; \
         echo ""; \
         echo "Building:"; \
         echo "  just clean              Clean all generated files"; \
         echo "  just build              Build wheel and sdist"; \
-        echo "  just build-wheel        Build wheel only"; \
-        echo "  just build-sdist        Build source distribution only"; \
+        echo "  just build wheel        Build wheel only"; \
+        echo "  just build sdist        Build source distribution only"; \
         echo ""; \
         echo "Publishing:"; \
-        echo "  just publish-test       Upload to TestPyPI (verify first)"; \
         echo "  just publish            Upload to PyPI (production)"; \
+        echo "  just publish test       Upload to TestPyPI (verify first)"; \
         echo ""; \
         echo "Documentation:"; \
-        echo "  just docs-build         Build docs locally"; \
-        echo "  just docs-check         Check docs with strict mode"; \
-        echo "  just docs-deploy        Deploy docs to GitHub Pages"; \
+        echo "  just docs               Build docs"; \
+        echo "  just docs serve         Serve docs locally"; \
+        echo "  just docs check         Check docs with strict mode"; \
+        echo "  just docs deploy        Deploy docs to GitHub Pages"; \
         ;; \
       *) \
         echo "Available workflows:"; \
