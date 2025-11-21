@@ -17,21 +17,16 @@ default:
     @echo "  just quality        All code quality checks"
     @echo "  just ci             Full CI pipeline (clean, setup, check)"
     @echo ""
-    @echo "🔧 Quick Aliases:"
-    @echo "  just f              Format code"
-    @echo "  just t              Run tests"
-    @echo "  just ck             Quality checks + tests"
-    @echo "  just b              Build packages"
-    @echo ""
     @echo "📖 All available recipes:"
     @echo "  just --list         Show all recipes (grouped by category)"
     @echo "  just --show RECIPE  Show recipe contents"
     @echo ""
-    @echo "🚀 Advanced Workflows:"
-    @echo "  just help-setup     Setup workflow help"
-    @echo "  just help-dev       Development workflow help"
-    @echo "  just help-test      Testing workflow help"
-    @echo "  just help-release   Release workflow help"
+    @echo "🚀 Guided Help:"
+    @echo "  just help           Show available workflows"
+    @echo "  just help setup     Setup workflow guide"
+    @echo "  just help dev       Development workflow guide"
+    @echo "  just help test      Testing workflow guide"
+    @echo "  just help release   Release workflow guide"
 
 # ============================================================================
 # SETUP & INSTALL
@@ -253,87 +248,84 @@ default:
 # HELP & DOCUMENTATION
 # ============================================================================
 
-# Setup workflow - getting started
-@help-setup:
-    @echo "🏗️ SETUP WORKFLOW"
-    @echo ""
-    @echo "First time setup:"
-    @echo "  1. just setup           Install project with all dependencies"
-    @echo "  2. just install-hooks   Setup git pre-commit hooks"
-    @echo "  3. just ci              Run full CI to verify setup"
-    @echo ""
-    @echo "Troubleshooting:"
-    @echo "  just clean              Remove all generated files"
-    @echo "  just reinstall          Clean reinstall (removes lock file)"
-    @echo "  just info               Show project information"
-
-# Development workflow
-@help-dev:
-    @echo "👨‍💻 DEVELOPMENT WORKFLOW"
-    @echo ""
-    @echo "Running the installer:"
-    @echo "  just dev                Run installer (interactive, prompts for path)"
-    @echo "  just run PATH           Run installer with specific project path"
-    @echo "  just repl               Start Python REPL for exploration"
-    @echo ""
-    @echo "Code changes:"
-    @echo "  just fmt                Format code automatically"
-    @echo "  just lint               Lint and fix issues"
-    @echo "  just types              Run type checker"
-    @echo "  just quality            All code quality checks at once"
-    @echo ""
-    @echo "Before committing:"
-    @echo "  just check              Quality checks + tests"
-    @echo "  just pre-commit         Run pre-commit hooks"
-
-# Testing workflow
-@help-test:
-    @echo "🧪 TESTING WORKFLOW"
-    @echo ""
-    @echo "Running tests:"
-    @echo "  just test               Run all tests"
-    @echo "  just test-cov           Tests with coverage report"
-    @echo "  just test-file FILE     Run specific test file"
-    @echo "  just test-pattern STR   Run tests matching pattern"
-    @echo "  just test-parallel      Run tests in parallel (faster)"
-    @echo "  just test-watch         Watch mode (auto-run on file changes)"
-    @echo ""
-    @echo "Coverage:"
-    @echo "  just test-cov           Generate coverage report"
-    @echo "                          Open: htmlcov/index.html"
-
-# Release workflow
-@help-release:
-    @echo "🚀 RELEASE WORKFLOW"
-    @echo ""
-    @echo "Preparation:"
-    @echo "  just ci                 Full CI pipeline (all checks + tests)"
-    @echo "  just check-deps         Check for outdated dependencies"
-    @echo "  just update             Update all dependencies"
-    @echo ""
-    @echo "Building:"
-    @echo "  just clean              Clean all generated files"
-    @echo "  just build              Build wheel and sdist"
-    @echo "  just build-wheel        Build wheel only"
-    @echo "  just build-sdist        Build source distribution only"
-    @echo ""
-    @echo "Publishing:"
-    @echo "  just publish-test       Upload to TestPyPI (verify first)"
-    @echo "  just publish            Upload to PyPI (production)"
-    @echo ""
-    @echo "Documentation:"
-    @echo "  just docs-build         Build docs locally"
-    @echo "  just docs-check         Check docs with strict mode"
-    @echo "  just docs-deploy        Deploy docs to GitHub Pages"
-
-# ============================================================================
-# ALIASES
-# ============================================================================
-
-alias f := fmt
-alias l := lint
-alias t := test
-alias ck := check
-alias b := build
-alias d := docs-build
-alias e := env
+# Show help for a workflow (setup, dev, test, release)
+@help WORKFLOW="":
+    #!/bin/bash
+    case "{{ WORKFLOW }}" in
+      setup)
+        echo "🏗️ SETUP WORKFLOW"
+        echo ""
+        echo "First time setup:"
+        echo "  1. just setup           Install project with all dependencies"
+        echo "  2. just install-hooks   Setup git pre-commit hooks"
+        echo "  3. just ci              Run full CI to verify setup"
+        echo ""
+        echo "Troubleshooting:"
+        echo "  just clean              Remove all generated files"
+        echo "  just reinstall          Clean reinstall (removes lock file)"
+        echo "  just info               Show project information"
+        ;;
+      dev)
+        echo "👨‍💻 DEVELOPMENT WORKFLOW"
+        echo ""
+        echo "Running the installer:"
+        echo "  just dev                Run installer (interactive, prompts for path)"
+        echo "  just run PATH           Run installer with specific project path"
+        echo "  just repl               Start Python REPL for exploration"
+        echo ""
+        echo "Code changes:"
+        echo "  just fmt                Format code automatically"
+        echo "  just lint               Lint and fix issues"
+        echo "  just types              Run type checker"
+        echo "  just quality            All code quality checks at once"
+        echo ""
+        echo "Before committing:"
+        echo "  just check              Quality checks + tests"
+        echo "  just pre-commit         Run pre-commit hooks"
+        ;;
+      test)
+        echo "🧪 TESTING WORKFLOW"
+        echo ""
+        echo "Running tests:"
+        echo "  just test               Run all tests"
+        echo "  just test-cov           Tests with coverage report"
+        echo "  just test-file FILE     Run specific test file"
+        echo "  just test-pattern STR   Run tests matching pattern"
+        echo "  just test-parallel      Run tests in parallel (faster)"
+        echo "  just test-watch         Watch mode (auto-run on file changes)"
+        echo ""
+        echo "Coverage:"
+        echo "  just test-cov           Generate coverage report"
+        echo "                          Open: htmlcov/index.html"
+        ;;
+      release)
+        echo "🚀 RELEASE WORKFLOW"
+        echo ""
+        echo "Preparation:"
+        echo "  just ci                 Full CI pipeline (all checks + tests)"
+        echo "  just check-deps         Check for outdated dependencies"
+        echo "  just update             Update all dependencies"
+        echo ""
+        echo "Building:"
+        echo "  just clean              Clean all generated files"
+        echo "  just build              Build wheel and sdist"
+        echo "  just build-wheel        Build wheel only"
+        echo "  just build-sdist        Build source distribution only"
+        echo ""
+        echo "Publishing:"
+        echo "  just publish-test       Upload to TestPyPI (verify first)"
+        echo "  just publish            Upload to PyPI (production)"
+        echo ""
+        echo "Documentation:"
+        echo "  just docs-build         Build docs locally"
+        echo "  just docs-check         Check docs with strict mode"
+        echo "  just docs-deploy        Deploy docs to GitHub Pages"
+        ;;
+      *)
+        echo "Available workflows:"
+        echo "  just help setup         Setup workflow - getting started"
+        echo "  just help dev           Development workflow"
+        echo "  just help test          Testing workflow"
+        echo "  just help release       Release workflow"
+        ;;
+    esac

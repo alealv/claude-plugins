@@ -105,3 +105,4 @@ ci = [
 
 [tool.uv]
 default-groups = ["maintain", "ci", "docs"]
+venv-path = ".venv"
