@@ -60,10 +60,13 @@ class TestCLIWithProjectPath:
             project_path = Path(tmpdir)
 
             # Mock the installer and UI to avoid actual installation
-            with patch("claude_tools._internal.cli.Installer") as mock_installer:
+            with patch("claude_tools._internal.cli.Installer"):
                 with patch("claude_tools._internal.cli.InstallUI"):
                     # Mock the installer instance to return False for run_interactive_installer
-                    with patch("claude_tools._internal.cli.run_interactive_installer", return_value=False):
+                    with patch(
+                        "claude_tools._internal.cli.run_interactive_installer",
+                        return_value=False,
+                    ):
                         # Main should handle the path argument
                         result = main([str(project_path)])
                         # Should return 0 (no installation since run_interactive_installer returns False)
