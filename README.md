@@ -9,12 +9,78 @@ Installer for common Claude agents, skills, hooks and commands
 
 ## Installation
 
+Install with pip:
 ```bash
 pip install claude-tools
 ```
 
-With [`uv`](https://docs.astral.sh/uv/):
-
+Or with [`uv`](https://docs.astral.sh/uv/):
 ```bash
 uv tool install claude-tools
 ```
+
+Or from source:
+```bash
+git clone https://github.com/alealv/claude-tools.git
+cd claude-tools
+uv sync --all-groups
+```
+
+## Quick Start
+
+### Run the installer
+```bash
+# Interactive mode - select configurations to install
+claude-tools /path/to/your/project
+```
+
+Or with default path prompting:
+```bash
+claude-tools
+```
+
+### What it does
+The installer discovers and installs Claude Code configurations:
+- **Commands**: Custom slash commands (e.g., `/commit`, `/review`)
+- **Skills**: Autonomous capabilities for Claude
+- **Hooks**: Automation scripts (e.g., auto-commit on task completion)
+- **Agents**: Task-specific Claude configurations
+
+Select items using arrow keys and space bar, then confirm to install.
+
+## Development
+
+### Setup
+```bash
+just setup
+just install-hooks
+```
+
+### Run tests
+```bash
+just test
+just test-cov        # with coverage
+```
+
+### Code quality
+```bash
+just fmt             # format code
+just lint            # lint code
+just quality         # all checks
+```
+
+### Build and publish
+```bash
+just build
+just publish-test    # test PyPI
+just publish         # production PyPI
+```
+
+See `justfile` for all available commands or run `just` to list recipes.
+
+## Documentation
+
+For detailed documentation, see:
+- [`docs/`](./docs/) - Complete documentation
+- [`docs/claude-configuration.md`](./docs/claude-configuration.md) - Configuration guide
+- [`hooks/auto-commit/README.md`](./hooks/auto-commit/README.md) - Auto-commit hook details

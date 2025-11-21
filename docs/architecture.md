@@ -249,27 +249,17 @@ For large numbers of items:
 
 ## Testing Strategy
 
-### Unit Tests (Planned)
+### Unit Tests
 - Installer path validation
 - Configuration item discovery
 - Hook settings merge logic
 - UI state transitions
 
-### Integration Tests (Planned)
+### Integration Tests
 - Full installation workflow
 - Terminal interaction
 - File copying
 - Settings merge
-
-### Manual Testing Checklist
-- [ ] Run with valid project path
-- [ ] Run without path (prompt)
-- [ ] Navigate all tabs
-- [ ] Select/deselect items
-- [ ] Cancel installation
-- [ ] Complete installation
-- [ ] Verify files copied correctly
-- [ ] Verify hook settings merged
 
 ## Security Considerations
 
