@@ -7,11 +7,10 @@ set dotenv-load := true
 
 # Show common recipes and usage tips
 default:
-    @echo "claude-tools - Interactive installer for Claude configurations"
+    @echo "claude-tools - Project management recipes"
     @echo ""
     @echo "📚 Common Commands:"
     @echo "  just setup          Install dependencies"
-    @echo "  just dev            Run interactive installer"
     @echo "  just test           Run all tests"
     @echo "  just fmt            Format code"
     @echo "  just quality        All code quality checks"
@@ -24,7 +23,6 @@ default:
     @echo "🚀 Guided Help:"
     @echo "  just help           Show available workflows"
     @echo "  just help setup     Setup workflow guide"
-    @echo "  just help dev       Development workflow guide"
     @echo "  just help test      Testing workflow guide"
     @echo "  just help release   Release workflow guide"
 
@@ -46,16 +44,8 @@ default:
     uv run pre-commit install
 
 # ============================================================================
-# DEV & RUN
+# DEVELOPMENT
 # ============================================================================
-
-# Run installer with PROJECT_PATH argument
-@run PROJECT_PATH:
-    uv run python -m claude_tools {{ PROJECT_PATH }}
-
-# Run installer (interactive - prompts for path)
-@dev:
-    uv run python -m claude_tools
 
 # Interactive Python REPL
 @repl:
@@ -248,7 +238,7 @@ default:
 # HELP & DOCUMENTATION
 # ============================================================================
 
-# Show help for a workflow (setup, dev, test, release)
+# Show help for a workflow (setup, test, release)
 @help WORKFLOW="":
     #!/bin/bash
     case "{{ WORKFLOW }}" in
@@ -264,24 +254,6 @@ default:
         echo "  just clean              Remove all generated files"
         echo "  just reinstall          Clean reinstall (removes lock file)"
         echo "  just info               Show project information"
-        ;;
-      dev)
-        echo "👨‍💻 DEVELOPMENT WORKFLOW"
-        echo ""
-        echo "Running the installer:"
-        echo "  just dev                Run installer (interactive, prompts for path)"
-        echo "  just run PATH           Run installer with specific project path"
-        echo "  just repl               Start Python REPL for exploration"
-        echo ""
-        echo "Code changes:"
-        echo "  just fmt                Format code automatically"
-        echo "  just lint               Lint and fix issues"
-        echo "  just types              Run type checker"
-        echo "  just quality            All code quality checks at once"
-        echo ""
-        echo "Before committing:"
-        echo "  just check              Quality checks + tests"
-        echo "  just pre-commit         Run pre-commit hooks"
         ;;
       test)
         echo "🧪 TESTING WORKFLOW"
@@ -324,7 +296,6 @@ default:
       *)
         echo "Available workflows:"
         echo "  just help setup         Setup workflow - getting started"
-        echo "  just help dev           Development workflow"
         echo "  just help test          Testing workflow"
         echo "  just help release       Release workflow"
         ;;
