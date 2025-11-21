@@ -29,7 +29,9 @@ def temp_repo_dir() -> Iterator[Path]:
         (repo_path / "hooks").mkdir()
 
         # Create sample command
-        (repo_path / "commands" / "test-command.md").write_text("# Test Command\n\nTest description")
+        (repo_path / "commands" / "test-command.md").write_text(
+            "# Test Command\n\nTest description"
+        )
 
         # Create sample skill
         skill_dir = repo_path / "skills" / "test-skill"
@@ -89,7 +91,9 @@ class TestConfigItem:
 class TestInstallerPathValidation:
     """Tests for Installer path validation."""
 
-    def test_validate_paths_success(self, temp_repo_dir: Path, temp_target_dir: Path) -> None:
+    def test_validate_paths_success(
+        self, temp_repo_dir: Path, temp_target_dir: Path
+    ) -> None:
         """Path validation succeeds with valid paths."""
         installer = Installer(repo_root=temp_repo_dir, target_project=temp_target_dir)
         assert installer.validate_paths() is True
@@ -114,7 +118,9 @@ class TestInstallerPathValidation:
 class TestInstallerItemDiscovery:
     """Tests for Installer item discovery."""
 
-    def test_discover_commands(self, temp_repo_dir: Path, temp_target_dir: Path) -> None:
+    def test_discover_commands(
+        self, temp_repo_dir: Path, temp_target_dir: Path
+    ) -> None:
         """Discover available commands."""
         installer = Installer(repo_root=temp_repo_dir, target_project=temp_target_dir)
         items = installer.get_available_items(ConfigType.COMMANDS)
@@ -146,7 +152,9 @@ class TestInstallerItemDiscovery:
         assert len(items) > 0
         assert any(item.name == "test-hook" for item in items)
 
-    def test_discover_empty_config_type(self, temp_repo_dir: Path, temp_target_dir: Path) -> None:
+    def test_discover_empty_config_type(
+        self, temp_repo_dir: Path, temp_target_dir: Path
+    ) -> None:
         """Discover returns empty list for non-existent items."""
         # Create empty repo without items
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -182,7 +190,9 @@ class TestInstallerInstallation:
         assert success >= 0
         assert failed >= 0
 
-    def test_install_multiple_items(self, temp_repo_dir: Path, temp_target_dir: Path) -> None:
+    def test_install_multiple_items(
+        self, temp_repo_dir: Path, temp_target_dir: Path
+    ) -> None:
         """Install multiple items at once."""
         installer = Installer(repo_root=temp_repo_dir, target_project=temp_target_dir)
 
@@ -234,11 +244,7 @@ class TestHookSettingsMerge:
         claude_dir = temp_target_dir / ".claude"
         claude_dir.mkdir(exist_ok=True)
 
-        existing_settings = {
-            "hooks": {
-                "PreToolUse": [{"existing": "handler"}]
-            }
-        }
+        existing_settings = {"hooks": {"PreToolUse": [{"existing": "handler"}]}}
         settings_file = claude_dir / "settings.json"
         with open(settings_file, "w") as f:
             json.dump(existing_settings, f)

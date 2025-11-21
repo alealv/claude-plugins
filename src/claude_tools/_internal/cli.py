@@ -41,23 +41,19 @@ def get_parser() -> argparse.ArgumentParser:
     """
     parser = argparse.ArgumentParser(
         prog="claude-tools",
-        description="Installer for Claude agents, skills, hooks, and commands"
+        description="Installer for Claude agents, skills, hooks, and commands",
     )
     parser.add_argument(
-        "-V", "--version",
-        action="version",
-        version=f"%(prog)s {debug._get_version()}"
+        "-V", "--version", action="version", version=f"%(prog)s {debug._get_version()}"
     )
     parser.add_argument(
-        "--debug-info",
-        action=_DebugInfo,
-        help="Print debug information."
+        "--debug-info", action=_DebugInfo, help="Print debug information."
     )
     parser.add_argument(
         "project_path",
         nargs="?",
         default=None,
-        help="Path to the target project (default: prompted if not provided)"
+        help="Path to the target project (default: prompted if not provided)",
     )
     return parser
 
@@ -219,15 +215,21 @@ def main(args: list[str] | None = None) -> int:
         # Merge hook settings
         if hook_successful > 0:
             if installer.merge_hook_settings(hook_items):
-                print(f"{Color.BLUE}✓{Color.RESET} Merged hook settings into .claude/settings.json")
+                print(
+                    f"{Color.BLUE}✓{Color.RESET} Merged hook settings into .claude/settings.json"
+                )
             else:
-                print(f"{Color.YELLOW}⚠{Color.RESET} Failed to merge some hook settings")
+                print(
+                    f"{Color.YELLOW}⚠{Color.RESET} Failed to merge some hook settings"
+                )
 
         successful += hook_successful
         failed += hook_failed
 
     print()
-    print(f"{Color.BOLD}{Color.GREEN}Installation complete!{Color.RESET} Installed {successful} item(s).")
+    print(
+        f"{Color.BOLD}{Color.GREEN}Installation complete!{Color.RESET} Installed {successful} item(s)."
+    )
     if failed > 0:
         print(f"{Color.YELLOW}Failed to install {failed} item(s).{Color.RESET}")
         return 1

@@ -183,4 +183,3 @@ class TestCLIErrorHandling:
                 except KeyboardInterrupt:
                     # KeyboardInterrupt is acceptable in tests
                     pass
-

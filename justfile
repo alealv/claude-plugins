@@ -81,9 +81,9 @@ default:
 @check-lint:
     uv run ruff check src tests
 
-# Type check code (Mypy)
+# Type check code (ty)
 @types:
-    uv run mypy src
+    uv run ty src
 
 # Run all quality checks
 @quality: check-fmt check-lint types

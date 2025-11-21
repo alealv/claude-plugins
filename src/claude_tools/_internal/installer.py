@@ -54,15 +54,24 @@ class Installer:
             True if paths are valid, False otherwise
         """
         if not self.repo_root.exists():
-            print(f"Error: Repository root does not exist: {self.repo_root}", file=sys.stderr)
+            print(
+                f"Error: Repository root does not exist: {self.repo_root}",
+                file=sys.stderr,
+            )
             return False
 
         if not self.target_project.exists():
-            print(f"Error: Target project does not exist: {self.target_project}", file=sys.stderr)
+            print(
+                f"Error: Target project does not exist: {self.target_project}",
+                file=sys.stderr,
+            )
             return False
 
         if not self.target_project.is_dir():
-            print(f"Error: Target project is not a directory: {self.target_project}", file=sys.stderr)
+            print(
+                f"Error: Target project is not a directory: {self.target_project}",
+                file=sys.stderr,
+            )
             return False
 
         return True
@@ -103,7 +112,9 @@ class Installer:
                             name=dir_path.name,
                             type=config_type,
                             source_path=dir_path,
-                            target_path=self.claude_dir / config_type.value / dir_path.name,
+                            target_path=self.claude_dir
+                            / config_type.value
+                            / dir_path.name,
                         )
                     )
         elif config_type == ConfigType.HOOKS:
@@ -216,7 +227,9 @@ class Installer:
                                 if handler not in settings["hooks"][event]:
                                     settings["hooks"][event].append(handler)
                 except json.JSONDecodeError:
-                    print(f"Error: Invalid JSON in {hook_settings_file}", file=sys.stderr)
+                    print(
+                        f"Error: Invalid JSON in {hook_settings_file}", file=sys.stderr
+                    )
                     return False
 
         # Write merged settings

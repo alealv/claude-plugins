@@ -241,7 +241,9 @@ class TestInstallUI:
 class TestUINavigation:
     """Tests for complex navigation scenarios."""
 
-    def test_left_right_navigation_buttons(self, sample_items: dict | None = None) -> None:
+    def test_left_right_navigation_buttons(
+        self, sample_items: dict | None = None
+    ) -> None:
         """Test left/right arrow navigation between buttons."""
         if sample_items is None:
             from pathlib import Path

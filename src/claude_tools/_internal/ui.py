@@ -52,10 +52,17 @@ class UIState:
 class InstallUI:
     """Interactive terminal UI for installing Claude configurations."""
 
-    TABS = [ConfigType.COMMANDS.value, ConfigType.SKILLS.value, ConfigType.AGENTS.value, ConfigType.HOOKS.value]
+    TABS = [
+        ConfigType.COMMANDS.value,
+        ConfigType.SKILLS.value,
+        ConfigType.AGENTS.value,
+        ConfigType.HOOKS.value,
+    ]
     MAX_DISPLAY_ROWS = 15
 
-    def __init__(self, items_by_type: dict[ConfigType, list[ConfigItem]], target_project: str) -> None:
+    def __init__(
+        self, items_by_type: dict[ConfigType, list[ConfigItem]], target_project: str
+    ) -> None:
         """Initialize the UI.
 
         Args:
@@ -83,9 +90,13 @@ class InstallUI:
         print("\033[2J\033[H", end="", flush=True)
 
         # Header
-        print(f"{Color.BOLD}{Color.CYAN}═══════════════════════════════════════════════════════════════{Color.RESET}")
+        print(
+            f"{Color.BOLD}{Color.CYAN}═══════════════════════════════════════════════════════════════{Color.RESET}"
+        )
         print(f"{Color.BOLD}{Color.CYAN}    Claude Config Installer{Color.RESET}")
-        print(f"{Color.BOLD}{Color.CYAN}═══════════════════════════════════════════════════════════════{Color.RESET}")
+        print(
+            f"{Color.BOLD}{Color.CYAN}═══════════════════════════════════════════════════════════════{Color.RESET}"
+        )
         print()
         print(f"{Color.DIM}Target: {Color.RESET}{self.target_project}")
         print()
@@ -94,7 +105,9 @@ class InstallUI:
         print("  ", end="")
         for i, tab in enumerate(self.TABS):
             if i == self.state.current_tab:
-                print(f"{Color.BOLD}{Color.BLUE}[ {tab.upper()} ]{Color.RESET} ", end="")
+                print(
+                    f"{Color.BOLD}{Color.BLUE}[ {tab.upper()} ]{Color.RESET} ", end=""
+                )
             else:
                 print(f"{Color.DIM}[ {tab} ]{Color.RESET} ", end="")
         print()
@@ -108,7 +121,9 @@ class InstallUI:
             print(f"{Color.DIM}  No items available in this category{Color.RESET}")
             print()
         else:
-            display_end = min(self.state.scroll_offset + self.MAX_DISPLAY_ROWS, len(items))
+            display_end = min(
+                self.state.scroll_offset + self.MAX_DISPLAY_ROWS, len(items)
+            )
 
             for i in range(self.state.scroll_offset, display_end):
                 item = items[i]
@@ -118,7 +133,9 @@ class InstallUI:
                     checkbox = "[✓]"
 
                 if i == self.state.current_row and self.state.focus == Focus.LIST:
-                    print(f"  {Color.BOLD}{Color.GREEN}→ {checkbox} {item.name}{Color.RESET}")
+                    print(
+                        f"  {Color.BOLD}{Color.GREEN}→ {checkbox} {item.name}{Color.RESET}"
+                    )
                 else:
                     print(f"    {checkbox} {item.name}")
 
@@ -126,7 +143,9 @@ class InstallUI:
 
             # Scroll indicator
             if len(items) > self.MAX_DISPLAY_ROWS:
-                print(f"{Color.DIM}  Showing {self.state.scroll_offset + 1}-{display_end} of {len(items)}{Color.RESET}")
+                print(
+                    f"{Color.DIM}  Showing {self.state.scroll_offset + 1}-{display_end} of {len(items)}{Color.RESET}"
+                )
                 print()
 
         # Spacing
@@ -148,7 +167,9 @@ class InstallUI:
         print()
 
         # Help text
-        print(f"{Color.DIM}  ↑/↓: Navigate  Space: Select  Tab: Switch tabs  Enter: Confirm  Esc: Cancel{Color.RESET}")
+        print(
+            f"{Color.DIM}  ↑/↓: Navigate  Space: Select  Tab: Switch tabs  Enter: Confirm  Esc: Cancel{Color.RESET}"
+        )
 
     def handle_up(self) -> None:
         """Handle up arrow key."""
@@ -171,8 +192,13 @@ class InstallUI:
         if self.state.focus == Focus.LIST:
             if items:
                 self.state.current_row = (self.state.current_row + 1) % len(items)
-                if self.state.current_row >= self.state.scroll_offset + self.MAX_DISPLAY_ROWS:
-                    self.state.scroll_offset = self.state.current_row - self.MAX_DISPLAY_ROWS + 1
+                if (
+                    self.state.current_row
+                    >= self.state.scroll_offset + self.MAX_DISPLAY_ROWS
+                ):
+                    self.state.scroll_offset = (
+                        self.state.current_row - self.MAX_DISPLAY_ROWS + 1
+                    )
             else:
                 self.state.focus = Focus.CANCEL
         elif self.state.focus == Focus.CANCEL:
@@ -197,7 +223,9 @@ class InstallUI:
             if items and self.state.current_row < len(items):
                 item = items[self.state.current_row]
                 key = f"{item.type.value}:{item.name}"
-                self.state.selected_items[key] = not self.state.selected_items.get(key, False)
+                self.state.selected_items[key] = not self.state.selected_items.get(
+                    key, False
+                )
 
     def handle_tab(self) -> None:
         """Handle tab key for tab switching."""
