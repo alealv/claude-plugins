@@ -11,7 +11,6 @@ import sys
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any
 
 
 class ConfigType(Enum):
