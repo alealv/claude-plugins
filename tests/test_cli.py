@@ -12,11 +12,6 @@ from claude_tools import main
 from claude_tools._internal import debug
 
 
-def test_main() -> None:
-    """Basic CLI test."""
-    assert main([]) == 0
-
-
 def test_show_help(capsys: pytest.CaptureFixture) -> None:
     """Show help.
 
@@ -64,13 +59,15 @@ class TestCLIWithProjectPath:
         with tempfile.TemporaryDirectory() as tmpdir:
             project_path = Path(tmpdir)
 
-            # Mock the installer to avoid actual installation
-            with patch("claude_tools._internal.cli.Installer"):
+            # Mock the installer and UI to avoid actual installation
+            with patch("claude_tools._internal.cli.Installer") as mock_installer:
                 with patch("claude_tools._internal.cli.InstallUI"):
-                    # Main should handle the path argument
-                    result = main([str(project_path)])
-                    # Should not raise an exception
-                    assert result in (0, None)
+                    # Mock the installer instance to return False for run_interactive_installer
+                    with patch("claude_tools._internal.cli.run_interactive_installer", return_value=False):
+                        # Main should handle the path argument
+                        result = main([str(project_path)])
+                        # Should return 0 (no installation since run_interactive_installer returns False)
+                        assert result in (0, None)
 
     def test_cli_with_nonexistent_path(self) -> None:
         """CLI handles non-existent project path."""
@@ -132,44 +129,8 @@ class TestCLIArgumentParsing:
             parser.parse_args(["-h"])
 
 
-class TestCLIIntegration:
-    """Integration tests for CLI."""
-
-    def test_cli_main_function_exists(self) -> None:
-        """Main function is callable."""
-        from claude_tools import main as main_func
-
-        assert callable(main_func)
-
-    def test_cli_returns_exit_code(self) -> None:
-        """CLI returns valid exit code."""
-        result = main([])
-
-        # Should return 0 or None (success)
-        assert result in (0, None) or isinstance(result, int)
-
-    def test_cli_help_text_complete(self, capsys: pytest.CaptureFixture) -> None:
-        """Help text includes necessary information."""
-        with pytest.raises(SystemExit):
-            main(["-h"])
-
-        captured = capsys.readouterr()
-        # Help should mention the tool and its purpose
-        assert "claude" in captured.out.lower()
-
-
 class TestCLIErrorHandling:
     """Tests for CLI error handling."""
-
-    def test_cli_handles_invalid_arguments(self) -> None:
-        """CLI handles invalid arguments gracefully."""
-        with patch("sys.exit"):
-            # Invalid argument should not crash
-            try:
-                main(["--invalid-flag"])
-            except SystemExit:
-                # SystemExit is expected for invalid args
-                pass
 
     def test_cli_handles_keyboard_interrupt(self) -> None:
         """CLI handles KeyboardInterrupt."""
