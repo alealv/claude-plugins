@@ -80,13 +80,13 @@ class TestInstallUI:
             ConfigType.COMMANDS: [
                 ConfigItem(
                     name="cmd1",
-                    config_type=ConfigType.COMMANDS,
+                    type=ConfigType.COMMANDS,
                     source_path=Path("/source/commands/cmd1.md"),
                     target_path=Path("/target/.claude/commands/cmd1.md"),
                 ),
                 ConfigItem(
                     name="cmd2",
-                    config_type=ConfigType.COMMANDS,
+                    type=ConfigType.COMMANDS,
                     source_path=Path("/source/commands/cmd2.md"),
                     target_path=Path("/target/.claude/commands/cmd2.md"),
                 ),
@@ -94,7 +94,7 @@ class TestInstallUI:
             ConfigType.SKILLS: [
                 ConfigItem(
                     name="skill1",
-                    config_type=ConfigType.SKILLS,
+                    type=ConfigType.SKILLS,
                     source_path=Path("/source/skills/skill1"),
                     target_path=Path("/target/.claude/skills/skill1"),
                 ),
@@ -103,7 +103,7 @@ class TestInstallUI:
             ConfigType.HOOKS: [
                 ConfigItem(
                     name="hook1",
-                    config_type=ConfigType.HOOKS,
+                    type=ConfigType.HOOKS,
                     source_path=Path("/source/hooks/hook1"),
                     target_path=Path("/target/.claude/hooks/hook1"),
                 ),
@@ -134,7 +134,7 @@ class TestInstallUI:
         current = ui.get_current_items()
 
         assert len(current) == 2
-        assert all(item.config_type == ConfigType.COMMANDS for item in current)
+        assert all(item.type == ConfigType.COMMANDS for item in current)
 
     def test_get_current_items_skills(self, sample_items: dict) -> None:
         """Get items for skills tab."""
@@ -144,7 +144,7 @@ class TestInstallUI:
         current = ui.get_current_items()
 
         assert len(current) == 1
-        assert current[0].config_type == ConfigType.SKILLS
+        assert current[0].type == ConfigType.SKILLS
 
     def test_handle_up_navigation(self, sample_items: dict) -> None:
         """Handle up arrow key navigation."""
@@ -250,7 +250,7 @@ class TestUINavigation:
                 ConfigType.COMMANDS: [
                     ConfigItem(
                         name="cmd1",
-                        config_type=ConfigType.COMMANDS,
+                        type=ConfigType.COMMANDS,
                         source_path=Path("/source/cmd1.md"),
                         target_path=Path("/target/cmd1.md"),
                     ),

@@ -76,12 +76,12 @@ class TestConfigItem:
         """ConfigItem can be created with required fields."""
         item = ConfigItem(
             name="test-item",
-            config_type=ConfigType.COMMANDS,
+            type=ConfigType.COMMANDS,
             source_path=Path("/source"),
             target_path=Path("/target"),
         )
         assert item.name == "test-item"
-        assert item.config_type == ConfigType.COMMANDS
+        assert item.type == ConfigType.COMMANDS
         assert item.source_path == Path("/source")
         assert item.target_path == Path("/target")
 
@@ -265,12 +265,12 @@ class TestConfigItemFields:
         """ConfigItem has all required fields."""
         item = ConfigItem(
             name="test",
-            config_type=ConfigType.COMMANDS,
+            type=ConfigType.COMMANDS,
             source_path=Path("/source"),
             target_path=Path("/target"),
         )
 
         assert hasattr(item, "name")
-        assert hasattr(item, "config_type")
+        assert hasattr(item, "type")
         assert hasattr(item, "source_path")
         assert hasattr(item, "target_path")
