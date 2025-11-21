@@ -5,23 +5,17 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 
+from rich.console import Console, Group
+from rich.text import Text
+from rich.panel import Panel
+
 from claude_tools._internal.installer import ConfigType, ConfigItem
 
-
-class Color:
-    """ANSI color codes."""
-
-    RED = "\033[0;31m"
-    GREEN = "\033[0;32m"
-    YELLOW = "\033[1;33m"
-    BLUE = "\033[0;34m"
-    CYAN = "\033[0;36m"
-    BOLD = "\033[1m"
-    DIM = "\033[2m"
-    RESET = "\033[0m"
-    CLEAR_LINE = "\033[2K"
-    HIDE_CURSOR = "\033[?25l"
-    SHOW_CURSOR = "\033[?25h"
+# Create console with proper terminal detection
+console = Console(
+    color_system="truecolor",
+    legacy_windows=False,
+)
 
 
 class Focus(Enum):
@@ -76,44 +70,43 @@ class InstallUI:
         config_type = ConfigType(self.TABS[self.state.current_tab])
         return self.items_by_type.get(config_type, [])
 
-    def draw(self) -> None:
-        """Draw the UI."""
-        print(f"{Color.HIDE_CURSOR}", end="", flush=True)
+    def render(self) -> Group:
+        """Render the UI as a Group.
 
-        # Clear screen
-        print("\033[2J\033[H", end="", flush=True)
+        Returns:
+            A Rich Group containing all UI elements
+        """
+        renderables = []
 
         # Header
-        print(
-            f"{Color.BOLD}{Color.CYAN}═══════════════════════════════════════════════════════════════{Color.RESET}"
-        )
-        print(f"{Color.BOLD}{Color.CYAN}    Claude Config Installer{Color.RESET}")
-        print(
-            f"{Color.BOLD}{Color.CYAN}═══════════════════════════════════════════════════════════════{Color.RESET}"
-        )
-        print()
-        print(f"{Color.DIM}Target: {Color.RESET}{self.target_project}")
-        print()
+        header_text = Text("Claude Config Installer", justify="center", style="bold cyan")
+        header = Panel(header_text, border_style="cyan", expand=True)
+        renderables.append(header)
+        renderables.append(Text())
 
-        # Draw tabs
-        print("  ", end="")
+        # Target path
+        target_text = Text()
+        target_text.append("  Target: ", style="dim")
+        target_text.append(self.target_project)
+        renderables.append(target_text)
+        renderables.append(Text())
+
+        # Tabs
+        tabs = Text("  ")
         for i, tab in enumerate(self.TABS):
             if i == self.state.current_tab:
-                print(
-                    f"{Color.BOLD}{Color.BLUE}[ {tab.upper()} ]{Color.RESET} ", end=""
-                )
+                tabs.append(f"[ {tab.upper()} ] ", style="bold blue")
             else:
-                print(f"{Color.DIM}[ {tab} ]{Color.RESET} ", end="")
-        print()
-        print()
+                tabs.append(f"[ {tab} ] ", style="dim")
+        renderables.append(tabs)
+        renderables.append(Text())
 
-        # Get items for current tab
+        # Items in a panel
         items = self.get_current_items()
+        items_renderables = []
 
-        # Display items
         if not items:
-            print(f"{Color.DIM}  No items available in this category{Color.RESET}")
-            print()
+            items_renderables.append(Text("No items available in this category", style="dim", justify="center"))
         else:
             display_end = min(
                 self.state.scroll_offset + self.MAX_DISPLAY_ROWS, len(items)
@@ -122,48 +115,58 @@ class InstallUI:
             for i in range(self.state.scroll_offset, display_end):
                 item = items[i]
                 key = f"{item.type.value}:{item.name}"
-                checkbox = "[ ]"
-                if self.state.selected_items.get(key):
-                    checkbox = "[✓]"
+                checkbox = "[ ]" if not self.state.selected_items.get(key) else "[X]"
 
                 if i == self.state.current_row and self.state.focus == Focus.LIST:
-                    print(
-                        f"  {Color.BOLD}{Color.GREEN}→ {checkbox} {item.name}{Color.RESET}"
-                    )
+                    items_renderables.append(Text(f"> {checkbox} {item.name}", style="bold green"))
                 else:
-                    print(f"    {checkbox} {item.name}")
-
-            print()
+                    items_renderables.append(Text(f"  {checkbox} {item.name}"))
 
             # Scroll indicator
             if len(items) > self.MAX_DISPLAY_ROWS:
-                print(
-                    f"{Color.DIM}  Showing {self.state.scroll_offset + 1}-{display_end} of {len(items)}{Color.RESET}"
+                items_renderables.append(Text())
+                items_renderables.append(
+                    Text(
+                        f"Showing {self.state.scroll_offset + 1}-{display_end} of {len(items)}",
+                        style="dim",
+                        justify="center"
+                    )
                 )
-                print()
 
-        # Spacing
-        for _ in range(3):
-            print()
+        items_panel = Panel(
+            Group(*items_renderables) if items_renderables else Text(""),
+            border_style="blue",
+            title=f"[bold]{self.TABS[self.state.current_tab].upper()}[/bold]",
+            title_align="left",
+            height=self.MAX_DISPLAY_ROWS + 4,
+            expand=True,
+        )
+        renderables.append(items_panel)
+        renderables.append(Text())
 
-        # Draw buttons
-        print("  ", end="")
+        # Buttons
+        buttons = Text(justify="center")
         if self.state.focus == Focus.CANCEL:
-            print(f"{Color.BOLD}{Color.RED}[ Cancel ]{Color.RESET}  ", end="")
+            buttons.append("[ Cancel ]", style="bold red")
         else:
-            print(f"{Color.DIM}[ Cancel ]{Color.RESET}  ", end="")
-
+            buttons.append("[ Cancel ]", style="dim")
+        buttons.append("  ")
         if self.state.focus == Focus.OK:
-            print(f"{Color.BOLD}{Color.GREEN}[ OK ]{Color.RESET}")
+            buttons.append("[ OK ]", style="bold green")
         else:
-            print(f"{Color.DIM}[ OK ]{Color.RESET}")
-        print()
-        print()
+            buttons.append("[ OK ]", style="dim")
+        renderables.append(buttons)
+        renderables.append(Text())
 
         # Help text
-        print(
-            f"{Color.DIM}  ↑/↓: Navigate  Space: Select  Tab: Switch tabs  Enter: Confirm  Esc: Cancel{Color.RESET}"
+        help_text = Text(
+            "Up/Down: Navigate  Space: Select  Tab: Switch tabs  Enter: Confirm  Esc: Cancel",
+            style="dim",
+            justify="center"
         )
+        renderables.append(help_text)
+
+        return Group(*renderables)
 
     def handle_up(self) -> None:
         """Handle up arrow key."""

@@ -12,6 +12,9 @@
 from __future__ import annotations
 
 import argparse
+import io
+import os
+import signal
 import sys
 import termios
 import time
@@ -19,9 +22,11 @@ import tty
 from pathlib import Path
 from typing import Any
 
+from rich.console import Console
+
 from claude_tools._internal import debug
 from claude_tools._internal.installer import ConfigType, Installer
-from claude_tools._internal.ui import Color, Focus, InstallUI
+from claude_tools._internal.ui import Focus, InstallUI
 
 
 class _DebugInfo(argparse.Action):
@@ -84,49 +89,120 @@ def run_interactive_installer(installer: Installer, ui: InstallUI) -> bool:
     Returns:
         True if installation should proceed, False if cancelled
     """
+    # Check if stdin is a TTY
+    if not sys.stdin.isatty():
+        temp_console = Console()
+        temp_console.print("[red]Error: stdin is not a TTY. Please run this command in an interactive terminal.[/red]")
+        return False
+
+    old_settings = None
+    needs_redraw = True
+
+    def handle_resize(signum, frame):
+        """Handle terminal resize."""
+        nonlocal needs_redraw
+        needs_redraw = True
+
+    # Set up signal handler for window resize
+    old_handler = signal.signal(signal.SIGWINCH, handle_resize)
+
+    # Create console for rendering - will query terminal size each time
+    console = Console(
+        color_system="truecolor",
+        legacy_windows=False,
+    )
+
     try:
         # Setup terminal for raw input
         old_settings = termios.tcgetattr(sys.stdin)
         tty.setraw(sys.stdin.fileno())
 
-        while True:
-            ui.draw()
+        # Hide cursor
+        console.show_cursor(False)
 
-            # Read input
+        while True:
+            # Redraw if needed
+            if needs_redraw:
+                # Get fresh terminal size
+                import shutil
+                try:
+                    # shutil.get_terminal_size is more robust than os.get_terminal_size
+                    # It checks COLUMNS/LINES env vars and falls back to other methods
+                    term_size = shutil.get_terminal_size()
+                    width = term_size.columns // 2  # TEST: Use half width
+                except (OSError, ValueError):
+                    width = 80  # Fallback
+
+                # Clear screen first
+                sys.stdout.write("\033[2J\033[H")
+                sys.stdout.flush()
+
+                # Render directly to stdout without buffering
+                render_console = Console(
+                    color_system="truecolor",
+                    legacy_windows=False,
+                    width=width,
+                    file=sys.stdout,
+                    force_terminal=True,
+                )
+
+                # Print the Group directly
+                render_console.print(ui.render())
+                needs_redraw = False
+
+            # Read input with timeout to allow resize handling
             try:
-                ch = sys.stdin.read(1)
-                if ch == "\x1b":  # Escape sequence
-                    ch2 = sys.stdin.read(1)
-                    if ch2 == "[":
-                        ch3 = sys.stdin.read(1)
-                        if ch3 == "A":  # Up arrow
-                            ui.handle_up()
-                        elif ch3 == "B":  # Down arrow
-                            ui.handle_down()
-                        elif ch3 == "D":  # Left arrow
-                            ui.handle_left()
-                        elif ch3 == "C":  # Right arrow
-                            ui.handle_right()
-                elif ch == " ":  # Space
-                    ui.handle_space()
-                elif ch == "\t":  # Tab
-                    ui.handle_tab()
-                elif ch in ("\n", "\r"):  # Enter
-                    if ui.state.focus == Focus.CANCEL:
+                # Make stdin non-blocking temporarily
+                import select
+                if select.select([sys.stdin], [], [], 0.1)[0]:
+                    ch = sys.stdin.read(1)
+
+                    if ch == "\x1b":  # Escape sequence
+                        ch2 = sys.stdin.read(1)
+                        if ch2 == "[":
+                            ch3 = sys.stdin.read(1)
+                            if ch3 == "A":  # Up arrow
+                                ui.handle_up()
+                                needs_redraw = True
+                            elif ch3 == "B":  # Down arrow
+                                ui.handle_down()
+                                needs_redraw = True
+                            elif ch3 == "D":  # Left arrow
+                                ui.handle_left()
+                                needs_redraw = True
+                            elif ch3 == "C":  # Right arrow
+                                ui.handle_right()
+                                needs_redraw = True
+                        elif ch2 == "\x1b":  # Double escape
+                            return False
+                    elif ch == " ":  # Space
+                        ui.handle_space()
+                        needs_redraw = True
+                    elif ch == "\t":  # Tab
+                        ui.handle_tab()
+                        needs_redraw = True
+                    elif ch in ("\n", "\r"):  # Enter
+                        if ui.state.focus == Focus.CANCEL:
+                            return False
+                        elif ui.state.focus == Focus.OK:
+                            return True
+                        elif ui.state.focus == Focus.LIST:
+                            ui.state.focus = Focus.OK
+                            needs_redraw = True
+                    elif ch in ("q", "Q"):  # q
                         return False
-                    elif ui.state.focus == Focus.OK:
-                        return True
-                    elif ui.state.focus == Focus.LIST:
-                        ui.state.focus = Focus.OK
-                elif ch in ("q", "Q", "\x1b"):  # q or Escape
-                    return False
+
             except KeyboardInterrupt:
                 return False
 
     finally:
+        # Restore signal handler
+        signal.signal(signal.SIGWINCH, old_handler)
+
         # Restore terminal
-        print(f"{Color.SHOW_CURSOR}", end="", flush=True)
-        if sys.platform != "win32" and "old_settings" in locals():
+        console.show_cursor(True)
+        console.clear()
+        if old_settings and sys.platform != "win32":
             try:
                 termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
             except Exception:
@@ -144,6 +220,9 @@ def main(args: list[str] | None = None) -> int:
     Returns:
         An exit code.
     """
+    # Create console for output
+    console = Console()
+
     parser = get_parser()
     opts = parser.parse_args(args=args)
 
@@ -154,7 +233,7 @@ def main(args: list[str] | None = None) -> int:
         target_project = input().strip()
 
     if not target_project:
-        print(f"{Color.YELLOW}No project path provided.{Color.RESET}")
+        console.print("[yellow]No project path provided.[/yellow]")
         return 1
 
     # Get repository root (parent of src directory)
@@ -179,23 +258,23 @@ def main(args: list[str] | None = None) -> int:
     # Run interactive UI
     ui = InstallUI(items_by_type, str(target_project))
 
-    print(f"{Color.BOLD}Starting interactive installer...{Color.RESET}")
+    console.print("[bold]Starting interactive installer...[/bold]")
     time.sleep(1)  # Brief pause before UI starts
 
     if not run_interactive_installer(installer, ui):
-        print(f"{Color.YELLOW}Installation cancelled.{Color.RESET}")
+        console.print("[yellow]Installation cancelled.[/yellow]")
         return 0
 
     # Get selected items
     selected_items = ui.get_selected_items()
 
     if not selected_items:
-        print(f"{Color.YELLOW}No items selected. Nothing to install.{Color.RESET}")
+        console.print("[yellow]No items selected. Nothing to install.[/yellow]")
         return 0
 
     # Install selected items
-    print(f"{Color.BOLD}Installing selected items...{Color.RESET}")
-    print()
+    console.print("[bold]Installing selected items...[/bold]")
+    console.print()
 
     # Separate items by type
     hook_items = [item for item in selected_items if item.type == ConfigType.HOOKS]
@@ -204,34 +283,34 @@ def main(args: list[str] | None = None) -> int:
     # Install non-hook items
     successful, failed = installer.install_items(other_items)
     for item in other_items:
-        print(f"{Color.GREEN}✓{Color.RESET} Installed {item.type.value}: {item.name}")
+        console.print(f"[green]✓[/green] Installed {item.type.value}: {item.name}")
 
     # Install hook items and merge settings
     if hook_items:
         hook_successful, hook_failed = installer.install_items(hook_items)
         for item in hook_items:
-            print(f"{Color.GREEN}✓{Color.RESET} Installed hook: {item.name}")
+            console.print(f"[green]✓[/green] Installed hook: {item.name}")
 
         # Merge hook settings
         if hook_successful > 0:
             if installer.merge_hook_settings(hook_items):
-                print(
-                    f"{Color.BLUE}✓{Color.RESET} Merged hook settings into .claude/settings.json"
+                console.print(
+                    "[blue]✓[/blue] Merged hook settings into .claude/settings.json"
                 )
             else:
-                print(
-                    f"{Color.YELLOW}⚠{Color.RESET} Failed to merge some hook settings"
+                console.print(
+                    "[yellow]⚠[/yellow] Failed to merge some hook settings"
                 )
 
         successful += hook_successful
         failed += hook_failed
 
-    print()
-    print(
-        f"{Color.BOLD}{Color.GREEN}Installation complete!{Color.RESET} Installed {successful} item(s)."
+    console.print()
+    console.print(
+        f"[bold green]Installation complete![/bold green] Installed {successful} item(s)."
     )
     if failed > 0:
-        print(f"{Color.YELLOW}Failed to install {failed} item(s).{Color.RESET}")
+        console.print(f"[yellow]Failed to install {failed} item(s).[/yellow]")
         return 1
 
     return 0

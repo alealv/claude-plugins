@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "true",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/auto-commit/auto-commit.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

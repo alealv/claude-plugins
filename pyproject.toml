@@ -28,7 +28,9 @@ classifiers = [
     "Topic :: Utilities",
     "Typing :: Typed",
 ]
-dependencies = []
+dependencies = [
+    "rich>=14.2.0",
+]
 
 [project.urls]
 Homepage = "https://alealv.github.io/claude-tools"
