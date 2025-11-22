@@ -97,13 +97,18 @@ class InstallUI:
         renderables.append(target_text)
         renderables.append(Text())
 
-        # Tabs
+        # Tabs - integrated line style with colors
         tabs = Text("  ")
         for i, tab in enumerate(self.TABS):
+            if i > 0:
+                tabs.append("─────", style="dim")
             if i == self.state.current_tab:
-                tabs.append(f"[ {tab.upper()} ] ", style="bold blue")
+                # Active tab in cyan
+                tabs.append(f" {tab.upper()} ", style="bold cyan")
             else:
-                tabs.append(f"[ {tab} ] ", style="dim")
+                # Inactive tabs in dim
+                tabs.append(f" {tab} ", style="dim")
+        tabs.append("─────", style="dim")
         renderables.append(tabs)
         renderables.append(Text())
 

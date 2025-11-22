@@ -235,6 +235,9 @@ def main(args: list[str] | None = None) -> int:
         console.print("[yellow]No project path provided.[/yellow]")
         return 1
 
+    # Convert to absolute path for display
+    target_project = str(Path(target_project).resolve())
+
     # Get repository root (parent of src directory)
     repo_root = Path(__file__).parent.parent.parent.parent
 
