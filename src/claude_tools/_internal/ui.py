@@ -97,22 +97,19 @@ class InstallUI:
         renderables.append(target_text)
         renderables.append(Text())
 
-        # Tabs - integrated line style with colors
-        tabs = Text("  ")
+        # Build tab title for panel - rectangles around each tab
+        tab_title = ""
         for i, tab in enumerate(self.TABS):
             if i > 0:
-                tabs.append("─────", style="dim")
+                tab_title += "[dim] ─── [/dim]"
             if i == self.state.current_tab:
-                # Active tab in cyan
-                tabs.append(f" {tab.upper()} ", style="bold cyan")
+                # Active tab - cyan and bold
+                tab_title += f"[bold cyan]\[{tab.upper()}][/bold cyan]"
             else:
-                # Inactive tabs in dim
-                tabs.append(f" {tab} ", style="dim")
-        tabs.append("─────", style="dim")
-        renderables.append(tabs)
-        renderables.append(Text())
+                # Inactive tab - dim
+                tab_title += f"[dim]\[{tab}][/dim]"
 
-        # Items in a panel
+        # Items in a panel with tabs in title
         items = self.get_current_items()
         items_renderables = []
 
@@ -146,7 +143,7 @@ class InstallUI:
 
         items_panel_kwargs = {
             "border_style": "blue",
-            "title": f"[bold]{self.TABS[self.state.current_tab].upper()}[/bold]",
+            "title": tab_title,
             "title_align": "left",
             "height": self.MAX_DISPLAY_ROWS + 4,
         }
