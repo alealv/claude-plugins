@@ -106,16 +106,16 @@ def run_interactive_installer(installer: Installer, ui: InstallUI) -> bool:
     # Set up signal handler for window resize
     old_handler = signal.signal(signal.SIGWINCH, handle_resize)
 
-    # Create console for rendering - will query terminal size each time
-    console = Console(
-        color_system="truecolor",
-        legacy_windows=False,
-    )
-
     try:
-        # Setup terminal for raw input
+        # Setup terminal for cbreak mode (not raw) to preserve Rich rendering
         old_settings = termios.tcgetattr(sys.stdin)
-        tty.setraw(sys.stdin.fileno())
+        tty.setcbreak(sys.stdin.fileno())
+
+        # Create console for rendering
+        console = Console(
+            color_system="truecolor",
+            legacy_windows=False,
+        )
 
         # Hide cursor
         console.show_cursor(False)
@@ -123,31 +123,11 @@ def run_interactive_installer(installer: Installer, ui: InstallUI) -> bool:
         while True:
             # Redraw if needed
             if needs_redraw:
-                # Get fresh terminal size
-                import shutil
-                try:
-                    # shutil.get_terminal_size is more robust than os.get_terminal_size
-                    # It checks COLUMNS/LINES env vars and falls back to other methods
-                    term_size = shutil.get_terminal_size()
-                    width = term_size.columns // 2  # TEST: Use half width
-                except (OSError, ValueError):
-                    width = 80  # Fallback
-
                 # Clear screen first
-                sys.stdout.write("\033[2J\033[H")
-                sys.stdout.flush()
+                console.clear()
 
-                # Render directly to stdout without buffering
-                render_console = Console(
-                    color_system="truecolor",
-                    legacy_windows=False,
-                    width=width,
-                    file=sys.stdout,
-                    force_terminal=True,
-                )
-
-                # Print the Group directly
-                render_console.print(ui.render())
+                # Print the Group directly with console width
+                console.print(ui.render(console_width=console.width))
                 needs_redraw = False
 
             # Read input with timeout to allow resize handling

@@ -70,8 +70,11 @@ class InstallUI:
         config_type = ConfigType(self.TABS[self.state.current_tab])
         return self.items_by_type.get(config_type, [])
 
-    def render(self) -> Group:
+    def render(self, console_width: int | None = None) -> Group:
         """Render the UI as a Group.
+
+        Args:
+            console_width: Optional console width for constraining panels
 
         Returns:
             A Rich Group containing all UI elements
@@ -80,7 +83,10 @@ class InstallUI:
 
         # Header
         header_text = Text("Claude Config Installer", justify="center", style="bold cyan")
-        header = Panel(header_text, border_style="cyan", expand=True)
+        panel_kwargs = {"border_style": "cyan"}
+        if console_width:
+            panel_kwargs["width"] = console_width
+        header = Panel(header_text, **panel_kwargs)
         renderables.append(header)
         renderables.append(Text())
 
@@ -133,13 +139,17 @@ class InstallUI:
                     )
                 )
 
+        items_panel_kwargs = {
+            "border_style": "blue",
+            "title": f"[bold]{self.TABS[self.state.current_tab].upper()}[/bold]",
+            "title_align": "left",
+            "height": self.MAX_DISPLAY_ROWS + 4,
+        }
+        if console_width:
+            items_panel_kwargs["width"] = console_width
         items_panel = Panel(
             Group(*items_renderables) if items_renderables else Text(""),
-            border_style="blue",
-            title=f"[bold]{self.TABS[self.state.current_tab].upper()}[/bold]",
-            title_align="left",
-            height=self.MAX_DISPLAY_ROWS + 4,
-            expand=True,
+            **items_panel_kwargs,
         )
         renderables.append(items_panel)
         renderables.append(Text())
