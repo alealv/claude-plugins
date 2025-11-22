@@ -155,6 +155,9 @@ def run_interactive_installer(installer: Installer, ui: InstallUI) -> bool:
                                 needs_redraw = True
                         elif ch2 == "\x1b":  # Double escape
                             return False
+                        else:
+                            # ESC alone (no arrow sequence) - cancel
+                            return False
                     elif ch == " ":  # Space
                         ui.handle_space()
                         needs_redraw = True
@@ -169,8 +172,24 @@ def run_interactive_installer(installer: Installer, ui: InstallUI) -> bool:
                         elif ui.state.focus == Focus.LIST:
                             ui.state.focus = Focus.OK
                             needs_redraw = True
-                    elif ch in ("q", "Q"):  # q
+                    # VIM keybindings
+                    elif ch in ("k", "K"):  # k = up
+                        ui.handle_up()
+                        needs_redraw = True
+                    elif ch in ("j", "J"):  # j = down
+                        ui.handle_down()
+                        needs_redraw = True
+                    elif ch in ("h", "H"):  # h = left
+                        ui.handle_left()
+                        needs_redraw = True
+                    elif ch in ("l", "L"):  # l = right
+                        ui.handle_right()
+                        needs_redraw = True
+                    elif ch in ("q", "Q", "\x11"):  # q or Ctrl-Q = quit
                         return False
+                    elif ch == "x":  # x = toggle selection (VIM-like)
+                        ui.handle_space()
+                        needs_redraw = True
 
             except KeyboardInterrupt:
                 return False

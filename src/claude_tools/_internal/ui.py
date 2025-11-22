@@ -169,11 +169,13 @@ class InstallUI:
         renderables.append(Text())
 
         # Help text
-        help_text = Text(
-            "Up/Down: Navigate  Space: Select  Tab: Switch tabs  Enter: Confirm  Esc: Cancel",
-            style="dim",
-            justify="center"
-        )
+        help_text = Text(style="dim", justify="center")
+        help_text.append("↑↓/jk: Navigate  ")
+        help_text.append("←→/hl: Switch tabs  ")
+        help_text.append("Space/x: Select  ")
+        help_text.append("Tab: Next tab  ")
+        help_text.append("Enter: Confirm  ")
+        help_text.append("Esc/q: Cancel")
         renderables.append(help_text)
 
         return Group(*renderables)
@@ -215,12 +217,22 @@ class InstallUI:
 
     def handle_left(self) -> None:
         """Handle left arrow key."""
-        if self.state.focus == Focus.OK:
+        if self.state.focus == Focus.LIST:
+            # Switch to previous tab
+            self.state.current_tab = (self.state.current_tab - 1) % len(self.TABS)
+            self.state.current_row = 0
+            self.state.scroll_offset = 0
+        elif self.state.focus == Focus.OK:
             self.state.focus = Focus.CANCEL
 
     def handle_right(self) -> None:
         """Handle right arrow key."""
-        if self.state.focus == Focus.CANCEL:
+        if self.state.focus == Focus.LIST:
+            # Switch to next tab
+            self.state.current_tab = (self.state.current_tab + 1) % len(self.TABS)
+            self.state.current_row = 0
+            self.state.scroll_offset = 0
+        elif self.state.focus == Focus.CANCEL:
             self.state.focus = Focus.OK
 
     def handle_space(self) -> None:

@@ -46,7 +46,20 @@ The installer discovers and installs Claude Code configurations:
 - **Hooks**: Automation scripts (e.g., auto-commit on task completion)
 - **Agents**: Task-specific Claude configurations
 
-Select items using arrow keys and space bar, then confirm to install.
+### Keybindings
+The installer supports both arrow keys and VIM keybindings:
+
+**Navigation:**
+- `↑` `↓` or `k` `j` - Navigate through items in the list
+- `←` `→` or `h` `l` - Switch between tabs (COMMANDS, SKILLS, AGENTS, HOOKS)
+- `Tab` - Switch to next tab
+
+**Selection:**
+- `Space` or `x` - Toggle selection of current item
+
+**Actions:**
+- `Enter` - Confirm selection and proceed with installation
+- `Esc` or `q` - Cancel and exit installer
 
 ## Development
 
