@@ -90,8 +90,8 @@ class Installer:
         if not repo_dir.exists():
             return items
 
-        if config_type == ConfigType.COMMANDS:
-            # Commands are .md files
+        if config_type in (ConfigType.COMMANDS, ConfigType.AGENTS):
+            # Commands and agents are .md files
             for file in sorted(repo_dir.glob("*.md")):
                 name = file.stem
                 items.append(
@@ -99,11 +99,11 @@ class Installer:
                         name=name,
                         type=config_type,
                         source_path=file,
-                        target_path=self.claude_dir / "commands" / f"{name}.md",
+                        target_path=self.claude_dir / config_type.value / f"{name}.md",
                     )
                 )
-        elif config_type in (ConfigType.SKILLS, ConfigType.AGENTS):
-            # Skills and agents are directories
+        elif config_type == ConfigType.SKILLS:
+            # Skills are directories
             for dir_path in sorted(repo_dir.iterdir()):
                 if dir_path.is_dir() and not dir_path.name.startswith("."):
                     items.append(
