@@ -157,72 +157,7 @@ uv run python -m claude_tools .
 
 ## Commit Workflow
 
-**Important**: Always commit meaningful changes. This repository includes an auto-commit agent for intelligent commit message generation.
-
-### Using the Auto-Commit Agent
-
-The `agents/auto-commit.md` agent analyzes changes and creates conventional commit messages:
-
-```bash
-# Agent is available at: agents/auto-commit.md
-# Model: Haiku (for efficiency)
-# Tools: Bash, Read, Grep
-```
-
-**Agent Workflow:**
-1. Analyzes `git status` and `git diff` to understand changes
-2. Determines conventional commit type (feat, fix, refactor, docs, test, etc.)
-3. Identifies scope from affected components/directories
-4. Generates specific, descriptive commit message
-5. Stages and commits changes
-
-**Conventional Commit Types:**
-- `feat` - New feature or functionality
-- `fix` - Bug fix or correction
-- `refactor` - Code restructuring without behavior change
-- `docs` - Documentation changes
-- `test` - Adding or modifying tests
-- `build` - Build system or dependency changes
-- `chore` - Maintenance tasks, cleanup
-- `perf` - Performance improvements
-- `style` - Code style/formatting (no logic change)
-
-**Message Format:**
-```
-<type>(<scope>): <description>
-
-[optional body]
-```
-
-**Examples:**
-```bash
-feat(ui): change Tab key to cycle focus instead of tabs
-fix(installer): handle missing settings.json gracefully
-docs(CLAUDE.md): add commit workflow guidelines
-refactor(cli): simplify keyboard input handling
-test(ui): add focus navigation tests
-```
-
-**Key Guidelines:**
-- Use imperative mood: "add feature" not "added feature"
-- Be specific: "add JWT token refresh" not "add new functionality"
-- Keep description under 50 characters
-- Use lowercase for descriptions
-- Scope should reflect primary affected component (ui, installer, cli, docs, etc.)
-
-### When to Commit
-
-Commit after:
-- Completing a logical unit of work
-- Fixing a bug
-- Adding a feature or functionality
-- Refactoring code
-- Updating documentation
-- Making meaningful changes to tests
-
-Do not commit:
-- Work-in-progress half-implemented features (unless explicitly requested)
-- Multiple unrelated changes together (ask user if separate commits are needed)
+**Important**: After each meaningful change, use the `agents/auto-commit.md` agent to create a conventional commit with an intelligent message.
 
 ## Version Management
 
