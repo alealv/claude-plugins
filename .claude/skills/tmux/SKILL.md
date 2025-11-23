@@ -64,6 +64,22 @@ This must ALWAYS be printed right after a session was started and once again at 
 - Agents MUST place tmux sockets under `CLAUDE_TMUX_SOCKET_DIR` (defaults to `${TMPDIR:-/tmp}/claude-tmux-sockets`) and use `tmux -S "$SOCKET"` so we can enumerate/clean them. Create the dir first: `mkdir -p "$CLAUDE_TMUX_SOCKET_DIR"`.
 - Default socket path to use unless you must isolate further: `SOCKET="$CLAUDE_TMUX_SOCKET_DIR/claude.sock"`.
 
+## Socket management
+
+**Understanding socket flags:**
+- `-L socket-name`: Creates/connects to named socket in default location (`/tmp/tmux-UID/socket-name`). Use for simple isolation.
+- `-S /full/path`: Creates/connects to socket at exact path. Use for custom directories (required for `CLAUDE_TMUX_SOCKET_DIR`).
+
+**Socket recovery:**
+- If a socket is accidentally deleted, recover it by sending `USR1` signal: `pkill -USR1 tmux`
+- Check socket path: `tmux -S "$SOCKET" display -p '#{socket_path}'`
+
+**Maintenance scripts:**
+- **Check socket health:** `./tools/socket-health.sh "$SOCKET"` - diagnose unresponsive sockets
+- **Recover socket:** `./tools/socket-health.sh --recover "$SOCKET"` - attempt automatic recovery
+- **Clean dead sockets:** `./tools/cleanup-sockets.sh` - remove orphaned socket files
+- **Dry run cleanup:** `./tools/cleanup-sockets.sh --dry-run` - preview what would be removed
+
 ## Targeting panes and naming
 
 - Target format: `{session}:{window}.{pane}`, defaults to `:0.0` if omitted. Keep names short (e.g., `claude-py`, `claude-gdb`).
@@ -77,15 +93,15 @@ This must ALWAYS be printed right after a session was started and once again at 
 
 ## Sending input safely
 
-- Prefer literal sends to avoid shell splitting: `tmux -L "$SOCKET" send-keys -t target -l -- "$cmd"`
+- Prefer literal sends to avoid shell splitting: `tmux -S "$SOCKET" send-keys -t target -l -- "$cmd"`
 - When composing inline commands, use single quotes or ANSI C quoting to avoid expansion: `tmux ... send-keys -t target -- $'python3 -m http.server 8000'`.
 - To send control keys: `tmux ... send-keys -t target C-c`, `C-d`, `C-z`, `Escape`, etc.
 
 ## Watching output
 
-- Capture recent history (joined lines to avoid wrapping artifacts): `tmux -L "$SOCKET" capture-pane -p -J -t target -S -200`.
+- Capture recent history (joined lines to avoid wrapping artifacts): `tmux -S "$SOCKET" capture-pane -p -J -t target -S -200`.
 - For continuous monitoring, poll with the helper script (below) instead of `tmux wait-for` (which does not watch pane output).
-- You can also temporarily attach to observe: `tmux -L "$SOCKET" attach -t "$SESSION"`; detach with `Ctrl+b d`.
+- You can also temporarily attach to observe: `tmux -S "$SOCKET" attach -t "$SESSION"`; detach with `Ctrl+b d`.
 - When giving instructions to a user, **explicitly print a copy/paste monitor command** alongside the action don't assume they remembered the command.
 
 ## Spawning Processes
@@ -132,3 +148,37 @@ Some special rules for processes:
 - `-i` poll interval seconds (default 0.5)
 - `-l` history lines to search from the pane (integer, default 1000)
 - Exits 0 on first match, 1 on timeout. On failure prints the last captured text to stderr to aid debugging.
+
+## Helper: socket-health.sh
+
+`./tools/socket-health.sh` checks socket health and attempts recovery if needed.
+
+```bash
+./tools/socket-health.sh [--recover] [--verbose] <socket-path>
+```
+
+- `socket-path` - Path to tmux socket file (required)
+- `-r`/`--recover` - Attempt recovery if unresponsive (sends `USR1` to tmux)
+- `-v`/`--verbose` - Show detailed information
+- Exits 0 if healthy or recovered, 1 if unresponsive or failed
+
+**Status codes:**
+- `HEALTHY` - Socket is responsive
+- `MISSING` - Socket file doesn't exist
+- `INVALID` - File exists but isn't a socket
+- `UNRESPONSIVE` - Socket exists but tmux server not responding
+- `RECOVERED` - Socket recovered after `USR1` signal
+- `RECOVERY FAILED` - Recovery attempt unsuccessful
+
+## Helper: cleanup-sockets.sh
+
+`./tools/cleanup-sockets.sh` scans for and removes dead socket files.
+
+```bash
+./tools/cleanup-sockets.sh [--dir <path>] [--force] [--dry-run]
+```
+
+- `-d`/`--dir` - Socket directory (default: `CLAUDE_TMUX_SOCKET_DIR`)
+- `-f`/`--force` - Auto-remove without prompting
+- `-n`/`--dry-run` - Show what would be removed without deleting
+- Scans socket directory, tests each socket, and removes unresponsive ones
