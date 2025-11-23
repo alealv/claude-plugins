@@ -8,8 +8,8 @@ Automatically commits changes after Claude completes a task, with intelligent lo
 
 - Automatically commits all changes when Claude finishes a task
 - Uses conventional commit format (feat, fix, docs, refactor, etc.)
-- Adds Claude signature to commits
-- Analyzes changes to generate meaningful commit messages
+- Generates meaningful commit messages using LLM analysis or static patterns
+- Intelligently groups related changes
 
 ### 🔄 Intelligent Commit Grouping
 
@@ -42,6 +42,27 @@ The hook automatically detects the commit type based on:
 | `ci` | CI/CD configuration changes |
 | `chore` | Other changes (cleanup, file removal, etc.) |
 
+### 🧠 Commit Message Generation
+
+The hook uses two methods to generate commit messages:
+
+**LLM-Based Generation (Preferred)**
+- Uses Claude API to analyze diffs and generate meaningful, specific commit messages
+- Requires `ANTHROPIC_API_KEY` environment variable
+- Requires `anthropic` Python package (`pip install anthropic`)
+- Falls back to static analysis if unavailable
+
+**Static Analysis (Fallback)**
+- Pattern matching based on file changes and diff content
+- No external dependencies required
+- Provides basic but accurate commit messages
+
+To enable LLM generation:
+```bash
+export ANTHROPIC_API_KEY="your-api-key"
+pip install anthropic
+```
+
 ## Installation
 
 ### Option 1: Using the Installer
@@ -57,10 +78,18 @@ The hook automatically detects the commit type based on:
 ```bash
 mkdir -p .claude/hooks/auto-commit
 cp hooks/auto-commit/auto-commit.sh .claude/hooks/auto-commit/
+cp hooks/auto-commit/generate-commit-message.py .claude/hooks/auto-commit/
 chmod +x .claude/hooks/auto-commit/auto-commit.sh
+chmod +x .claude/hooks/auto-commit/generate-commit-message.py
 ```
 
-2. Add to your `.claude/settings.json`:
+2. (Optional) Install Python dependencies for LLM generation:
+```bash
+pip install anthropic
+export ANTHROPIC_API_KEY="your-api-key"
+```
+
+3. Add to your `.claude/settings.json`:
 ```json
 {
   "hooks": {
@@ -175,20 +204,16 @@ All commits follow the conventional commit format:
 
 ```
 <type>(<scope>): <description>
-
-🤖 Generated with Claude Code
-
-Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
 ### Examples:
 
 ```
-feat(auth): add user authentication
-fix(api): fix validation errors
-docs(readme): update installation instructions
-refactor(utils): reorganize helper functions
-test(user): add/update tests
+feat(auth): add password validation
+fix(api): handle null responses correctly
+docs(readme): update installation steps
+refactor(utils): simplify error handling
+test(user): add edge case coverage
 build(deps): update dependencies
 ```
 

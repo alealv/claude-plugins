@@ -125,8 +125,35 @@ analyze_changes() {
 # Stage all changes
 git add -A
 
-# Get analysis
-ANALYSIS=$(analyze_changes "$GIT_DIFF" "$CHANGED_FILES")
+# Try LLM-based analysis first, fall back to static analysis
+ANALYSIS=""
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PYTHON_GENERATOR="$SCRIPT_DIR/generate-commit-message.py"
+
+if [ -f "$PYTHON_GENERATOR" ] && command -v python3 >/dev/null 2>&1; then
+    # Create temp files for Python script
+    TEMP_DIFF=$(mktemp)
+    TEMP_FILES=$(mktemp)
+
+    echo "$GIT_DIFF" > "$TEMP_DIFF"
+    echo "$CHANGED_FILES" > "$TEMP_FILES"
+
+    # Try to generate commit message with LLM
+    if ANALYSIS=$(python3 "$PYTHON_GENERATOR" "$TEMP_DIFF" "$TEMP_FILES" 2>/dev/null); then
+        echo -e "${GREEN}✓ Generated commit message with LLM${RESET}" >&2
+    else
+        echo -e "${YELLOW}⚠ LLM generation failed, using static analysis${RESET}" >&2
+        ANALYSIS=$(analyze_changes "$GIT_DIFF" "$CHANGED_FILES")
+    fi
+
+    # Cleanup temp files
+    rm -f "$TEMP_DIFF" "$TEMP_FILES"
+else
+    # Python script not available, use static analysis
+    ANALYSIS=$(analyze_changes "$GIT_DIFF" "$CHANGED_FILES")
+fi
+
+# Parse analysis result
 COMMIT_TYPE=$(echo "$ANALYSIS" | cut -d'|' -f1)
 COMMIT_SCOPE=$(echo "$ANALYSIS" | cut -d'|' -f2)
 COMMIT_DESC=$(echo "$ANALYSIS" | cut -d'|' -f3)
@@ -137,13 +164,6 @@ if [ -n "$COMMIT_SCOPE" ]; then
 else
     COMMIT_MSG="${COMMIT_TYPE}: ${COMMIT_DESC}"
 fi
-
-# Add Claude signature
-COMMIT_MSG="${COMMIT_MSG}
-
-🤖 Generated with Claude Code
-
-Co-Authored-By: Claude <noreply@anthropic.com>"
 
 # Determine if we should amend or create new commit
 SHOULD_AMEND=false
