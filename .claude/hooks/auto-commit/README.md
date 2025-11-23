@@ -42,12 +42,14 @@ The hook automatically detects the commit type based on:
 | `ci` | CI/CD configuration changes |
 | `chore` | Other changes (cleanup, file removal, etc.) |
 
-### 🧠 Commit Message Generation
+### 🧠 Commit Message Generation with Haiku Agent
 
-The hook uses two methods to generate commit messages:
+The hook uses an autonomous agent powered by **Claude 3.5 Haiku** to generate intelligent commit messages:
 
-**LLM-Based Generation (Preferred)**
-- Uses Claude API to analyze diffs and generate meaningful, specific commit messages
+**Agent-Based Generation (Preferred)**
+- Autonomous agent analyzes code changes and generates meaningful, context-aware commit messages
+- Uses **Claude 3.5 Haiku** model for fast, cost-effective analysis (~$0.001 per commit)
+- Reasons about code changes to understand intent and impact
 - Requires `ANTHROPIC_API_KEY` environment variable
 - Requires `anthropic` Python package (`pip install anthropic`)
 - Falls back to static analysis if unavailable
@@ -57,7 +59,7 @@ The hook uses two methods to generate commit messages:
 - No external dependencies required
 - Provides basic but accurate commit messages
 
-To enable LLM generation:
+To enable the Haiku agent:
 ```bash
 export ANTHROPIC_API_KEY="your-api-key"
 pip install anthropic
@@ -78,12 +80,12 @@ pip install anthropic
 ```bash
 mkdir -p .claude/hooks/auto-commit
 cp hooks/auto-commit/auto-commit.sh .claude/hooks/auto-commit/
-cp hooks/auto-commit/generate-commit-message.py .claude/hooks/auto-commit/
+cp hooks/auto-commit/commit-message-agent.py .claude/hooks/auto-commit/
 chmod +x .claude/hooks/auto-commit/auto-commit.sh
-chmod +x .claude/hooks/auto-commit/generate-commit-message.py
+chmod +x .claude/hooks/auto-commit/commit-message-agent.py
 ```
 
-2. (Optional) Install Python dependencies for LLM generation:
+2. (Optional) Install Python dependencies for Haiku agent:
 ```bash
 pip install anthropic
 export ANTHROPIC_API_KEY="your-api-key"
@@ -121,25 +123,39 @@ MIN_FILES_FOR_SPLIT=10      # Threshold for considering commit splits
 
 When Claude finishes a task, the hook:
 - Checks if there are uncommitted changes
-- Analyzes the diff to understand what changed
-- Determines file types and change patterns
+- Collects git diff and changed files list
+- Prepares data for analysis
 
-### 2. Commit Type Analysis
+### 2. Agent-Based Analysis (Haiku)
 
+The commit message agent:
+1. **Receives context**: Git diff + changed files
+2. **Analyzes changes**: Uses Claude 3.5 Haiku to understand:
+   - What functionality was added/changed/removed
+   - The intent behind the changes
+   - The scope/component affected
+3. **Reasons about type**: Determines conventional commit type (feat/fix/docs/etc.)
+4. **Generates description**: Creates specific, meaningful description
+5. **Returns structured output**: `type|scope|description`
+
+**Agent characteristics:**
+- Model: Claude 3.5 Haiku (fast, cost-effective)
+- Temperature: 0.2 (consistent, focused)
+- Max tokens: 200 (concise responses)
+- Fallback: Static pattern matching if agent unavailable
+
+### 3. Static Analysis Fallback
+
+If agent is unavailable, pattern matching is used:
 ```bash
-# Example analysis logic
-if [test files changed]; then
-  type="test"
-elif [new features added]; then
-  type="feat"
-elif [bugs fixed]; then
-  type="fix"
-elif [code refactored]; then
-  type="refactor"
+# Example static logic
+if [test files changed]; then type="test"
+elif [new features added]; then type="feat"
+elif [bugs fixed]; then type="fix"
 # ... etc
 ```
 
-### 3. Amend Decision
+### 4. Amend Decision
 
 The hook decides whether to amend based on:
 
@@ -155,7 +171,7 @@ ELSE
    amend = false
 ```
 
-### 4. Commit Execution
+### 5. Commit Execution
 
 - **New commit**: Creates a new commit with generated message
 - **Amend**: Updates the previous commit with new changes

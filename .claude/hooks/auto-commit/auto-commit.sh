@@ -125,31 +125,31 @@ analyze_changes() {
 # Stage all changes
 git add -A
 
-# Try LLM-based analysis first, fall back to static analysis
+# Try agent-based analysis first, fall back to static analysis
 ANALYSIS=""
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PYTHON_GENERATOR="$SCRIPT_DIR/generate-commit-message.py"
+COMMIT_AGENT="$SCRIPT_DIR/commit-message-agent.py"
 
-if [ -f "$PYTHON_GENERATOR" ] && command -v python3 >/dev/null 2>&1; then
-    # Create temp files for Python script
+if [ -f "$COMMIT_AGENT" ] && command -v python3 >/dev/null 2>&1; then
+    # Create temp files for agent
     TEMP_DIFF=$(mktemp)
     TEMP_FILES=$(mktemp)
 
     echo "$GIT_DIFF" > "$TEMP_DIFF"
     echo "$CHANGED_FILES" > "$TEMP_FILES"
 
-    # Try to generate commit message with LLM
-    if ANALYSIS=$(python3 "$PYTHON_GENERATOR" "$TEMP_DIFF" "$TEMP_FILES" 2>/dev/null); then
-        echo -e "${GREEN}✓ Generated commit message with LLM${RESET}" >&2
+    # Invoke commit message agent (Claude Haiku)
+    if ANALYSIS=$(python3 "$COMMIT_AGENT" "$TEMP_DIFF" "$TEMP_FILES" 2>/dev/null); then
+        echo -e "${GREEN}✓ Generated commit message with Haiku agent${RESET}" >&2
     else
-        echo -e "${YELLOW}⚠ LLM generation failed, using static analysis${RESET}" >&2
+        echo -e "${YELLOW}⚠ Agent failed, using static analysis${RESET}" >&2
         ANALYSIS=$(analyze_changes "$GIT_DIFF" "$CHANGED_FILES")
     fi
 
     # Cleanup temp files
     rm -f "$TEMP_DIFF" "$TEMP_FILES"
 else
-    # Python script not available, use static analysis
+    # Agent not available, use static analysis
     ANALYSIS=$(analyze_changes "$GIT_DIFF" "$CHANGED_FILES")
 fi
 
