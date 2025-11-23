@@ -175,7 +175,7 @@ class InstallUI:
         help_text.append("↑↓/jk: Navigate  ")
         help_text.append("←→/hl: Switch tabs  ")
         help_text.append("Space/x: Select  ")
-        help_text.append("Tab: Next tab  ")
+        help_text.append("Tab: Change focus  ")
         help_text.append("Enter: Confirm  ")
         help_text.append("Esc/q: Cancel")
         renderables.append(help_text)
@@ -249,11 +249,13 @@ class InstallUI:
                 )
 
     def handle_tab(self) -> None:
-        """Handle tab key for tab switching."""
-        self.state.current_tab = (self.state.current_tab + 1) % len(self.TABS)
-        self.state.current_row = 0
-        self.state.scroll_offset = 0
-        self.state.focus = Focus.LIST
+        """Handle tab key for focus navigation."""
+        if self.state.focus == Focus.LIST:
+            self.state.focus = Focus.CANCEL
+        elif self.state.focus == Focus.CANCEL:
+            self.state.focus = Focus.OK
+        elif self.state.focus == Focus.OK:
+            self.state.focus = Focus.LIST
 
     def get_selected_items(self) -> list[ConfigItem]:
         """Get all selected items.
