@@ -9,7 +9,7 @@ from rich.console import Console, Group
 from rich.text import Text
 from rich.panel import Panel
 
-from claude_tools._internal.installer import ConfigType, ConfigItem
+from claude_tools._internal.installer import ConfigType, ConfigItem, InstallStatus
 
 # Create console with proper terminal detection
 console = Console(
@@ -26,6 +26,14 @@ class Focus(Enum):
     OK = "ok"
 
 
+class ItemAction(Enum):
+    """User action for an item."""
+
+    NONE = "none"  # No action (keep as-is or skip)
+    INSTALL = "install"  # Install or update
+    UNINSTALL = "uninstall"  # Remove
+
+
 @dataclass
 class UIState:
     """Tracks the state of the UI."""
@@ -34,7 +42,7 @@ class UIState:
     current_row: int = 0
     scroll_offset: int = 0
     focus: Focus = Focus.LIST
-    selected_items: dict[str, bool] = field(default_factory=dict)
+    item_actions: dict[str, ItemAction] = field(default_factory=dict)
 
 
 class InstallUI:
@@ -82,11 +90,14 @@ class InstallUI:
         renderables = []
 
         # Header
-        header_text = Text("Claude Config Installer", justify="center", style="bold cyan")
-        panel_kwargs = {"border_style": "cyan"}
-        if console_width:
-            panel_kwargs["width"] = console_width
-        header = Panel(header_text, **panel_kwargs)
+        header_text = Text(
+            "Claude Config Installer", justify="center", style="bold cyan"
+        )
+        header = Panel(
+            header_text,
+            border_style="cyan",
+            width=console_width,
+        )
         renderables.append(header)
         renderables.append(Text())
 
@@ -104,17 +115,21 @@ class InstallUI:
                 tab_title += "[dim] ─── [/dim]"
             if i == self.state.current_tab:
                 # Active tab - cyan and bold
-                tab_title += f"[bold cyan]\[{tab.upper()}][/bold cyan]"
+                tab_title += f"[bold cyan]\\[{tab.upper()}][/bold cyan]"
             else:
                 # Inactive tab - dim
-                tab_title += f"[dim]\[{tab}][/dim]"
+                tab_title += f"[dim]\\[{tab}][/dim]"
 
         # Items in a panel with tabs in title
         items = self.get_current_items()
         items_renderables = []
 
         if not items:
-            items_renderables.append(Text("No items available in this category", style="dim", justify="center"))
+            items_renderables.append(
+                Text(
+                    "No items available in this category", style="dim", justify="center"
+                )
+            )
         else:
             display_end = min(
                 self.state.scroll_offset + self.MAX_DISPLAY_ROWS, len(items)
@@ -123,12 +138,27 @@ class InstallUI:
             for i in range(self.state.scroll_offset, display_end):
                 item = items[i]
                 key = f"{item.type.value}:{item.name}"
-                checkbox = "[ ]" if not self.state.selected_items.get(key) else "[X]"
+                action = self.state.item_actions.get(key, ItemAction.NONE)
+
+                # Determine checkbox symbol and suffix based on install status and action
+                if item.install_status == InstallStatus.NOT_INSTALLED:
+                    checkbox = "[✓]" if action == ItemAction.INSTALL else "[ ]"
+                    suffix = ""
+                elif item.install_status == InstallStatus.INSTALLED_CURRENT:
+                    checkbox = "[ ]" if action == ItemAction.UNINSTALL else "[✓]"
+                    suffix = " (installed)"
+                else:  # INSTALLED_OUTDATED
+                    checkbox = "[✓]" if action == ItemAction.INSTALL else "[✗]"
+                    suffix = " (outdated)"
+
+                display_text = f"{checkbox} {item.name}{suffix}"
 
                 if i == self.state.current_row and self.state.focus == Focus.LIST:
-                    items_renderables.append(Text(f"> {checkbox} {item.name}", style="bold green"))
+                    items_renderables.append(
+                        Text(f"> {display_text}", style="bold green")
+                    )
                 else:
-                    items_renderables.append(Text(f"  {checkbox} {item.name}"))
+                    items_renderables.append(Text(f"  {display_text}"))
 
             # Scroll indicator
             if len(items) > self.MAX_DISPLAY_ROWS:
@@ -137,21 +167,17 @@ class InstallUI:
                     Text(
                         f"Showing {self.state.scroll_offset + 1}-{display_end} of {len(items)}",
                         style="dim",
-                        justify="center"
+                        justify="center",
                     )
                 )
 
-        items_panel_kwargs = {
-            "border_style": "blue",
-            "title": tab_title,
-            "title_align": "left",
-            "height": self.MAX_DISPLAY_ROWS + 4,
-        }
-        if console_width:
-            items_panel_kwargs["width"] = console_width
         items_panel = Panel(
             Group(*items_renderables) if items_renderables else Text(""),
-            **items_panel_kwargs,
+            border_style="blue",
+            title=tab_title,
+            title_align="left",
+            height=self.MAX_DISPLAY_ROWS + 4,
+            width=console_width,
         )
         renderables.append(items_panel)
         renderables.append(Text())
@@ -238,15 +264,43 @@ class InstallUI:
             self.state.focus = Focus.OK
 
     def handle_space(self) -> None:
-        """Handle space key for selection."""
+        """Handle space key for selection.
+
+        Cycles through actions based on install status:
+        - NOT_INSTALLED: NONE → INSTALL → NONE
+        - INSTALLED_CURRENT: NONE → UNINSTALL → NONE
+        - INSTALLED_OUTDATED: NONE → INSTALL → NONE
+        """
         if self.state.focus == Focus.LIST:
             items = self.get_current_items()
             if items and self.state.current_row < len(items):
                 item = items[self.state.current_row]
                 key = f"{item.type.value}:{item.name}"
-                self.state.selected_items[key] = not self.state.selected_items.get(
-                    key, False
-                )
+                current_action = self.state.item_actions.get(key, ItemAction.NONE)
+
+                if item.install_status == InstallStatus.NOT_INSTALLED:
+                    # Cycle: NONE → INSTALL → NONE
+                    new_action = (
+                        ItemAction.INSTALL
+                        if current_action == ItemAction.NONE
+                        else ItemAction.NONE
+                    )
+                elif item.install_status == InstallStatus.INSTALLED_CURRENT:
+                    # Cycle: NONE → UNINSTALL → NONE (default is NONE = keep)
+                    new_action = (
+                        ItemAction.UNINSTALL
+                        if current_action == ItemAction.NONE
+                        else ItemAction.NONE
+                    )
+                else:  # INSTALLED_OUTDATED
+                    # Cycle: NONE → INSTALL → NONE (NONE = keep outdated)
+                    new_action = (
+                        ItemAction.INSTALL
+                        if current_action == ItemAction.NONE
+                        else ItemAction.NONE
+                    )
+
+                self.state.item_actions[key] = new_action
 
     def handle_tab(self) -> None:
         """Handle tab key for focus navigation."""
@@ -257,17 +311,40 @@ class InstallUI:
         elif self.state.focus == Focus.OK:
             self.state.focus = Focus.LIST
 
-    def get_selected_items(self) -> list[ConfigItem]:
-        """Get all selected items.
+    def get_items_to_install(self) -> list[ConfigItem]:
+        """Get items that should be installed or updated.
 
         Returns:
-            List of selected configuration items
+            List of items with INSTALL action
         """
-        selected = []
+        items_to_install = []
         for config_type in ConfigType:
             items = self.items_by_type.get(config_type, [])
             for item in items:
                 key = f"{item.type.value}:{item.name}"
-                if self.state.selected_items.get(key):
-                    selected.append(item)
-        return selected
+                if self.state.item_actions.get(key) == ItemAction.INSTALL:
+                    items_to_install.append(item)
+        return items_to_install
+
+    def get_items_to_uninstall(self) -> list[ConfigItem]:
+        """Get items that should be uninstalled.
+
+        Returns:
+            List of items with UNINSTALL action
+        """
+        items_to_uninstall = []
+        for config_type in ConfigType:
+            items = self.items_by_type.get(config_type, [])
+            for item in items:
+                key = f"{item.type.value}:{item.name}"
+                if self.state.item_actions.get(key) == ItemAction.UNINSTALL:
+                    items_to_uninstall.append(item)
+        return items_to_uninstall
+
+    def get_selected_items(self) -> list[ConfigItem]:
+        """Get all selected items (for backward compatibility).
+
+        Returns:
+            List of items to install (same as get_items_to_install)
+        """
+        return self.get_items_to_install()

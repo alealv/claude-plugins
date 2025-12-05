@@ -22,6 +22,14 @@ class ConfigType(Enum):
     HOOKS = "hooks"
 
 
+class InstallStatus(Enum):
+    """Installation status of a configuration item."""
+
+    NOT_INSTALLED = "not_installed"
+    INSTALLED_CURRENT = "installed_current"
+    INSTALLED_OUTDATED = "installed_outdated"
+
+
 @dataclass
 class ConfigItem:
     """Represents a configuration item."""
@@ -30,6 +38,7 @@ class ConfigItem:
     type: ConfigType
     source_path: Path
     target_path: Path | None = None
+    install_status: InstallStatus = InstallStatus.NOT_INSTALLED
 
 
 class Installer:
@@ -94,40 +103,38 @@ class Installer:
             # Commands and agents are .md files
             for file in sorted(repo_dir.glob("*.md")):
                 name = file.stem
-                items.append(
-                    ConfigItem(
-                        name=name,
-                        type=config_type,
-                        source_path=file,
-                        target_path=self.claude_dir / config_type.value / f"{name}.md",
-                    )
+                item = ConfigItem(
+                    name=name,
+                    type=config_type,
+                    source_path=file,
+                    target_path=self.claude_dir / config_type.value / f"{name}.md",
                 )
+                item.install_status = self.get_install_status(item)
+                items.append(item)
         elif config_type == ConfigType.SKILLS:
             # Skills are directories
             for dir_path in sorted(repo_dir.iterdir()):
                 if dir_path.is_dir() and not dir_path.name.startswith("."):
-                    items.append(
-                        ConfigItem(
-                            name=dir_path.name,
-                            type=config_type,
-                            source_path=dir_path,
-                            target_path=self.claude_dir
-                            / config_type.value
-                            / dir_path.name,
-                        )
+                    item = ConfigItem(
+                        name=dir_path.name,
+                        type=config_type,
+                        source_path=dir_path,
+                        target_path=self.claude_dir / config_type.value / dir_path.name,
                     )
+                    item.install_status = self.get_install_status(item)
+                    items.append(item)
         elif config_type == ConfigType.HOOKS:
             # Hooks are directories
             for dir_path in sorted(repo_dir.iterdir()):
                 if dir_path.is_dir() and not dir_path.name.startswith("."):
-                    items.append(
-                        ConfigItem(
-                            name=dir_path.name,
-                            type=config_type,
-                            source_path=dir_path,
-                            target_path=self.claude_dir / "hooks" / dir_path.name,
-                        )
+                    item = ConfigItem(
+                        name=dir_path.name,
+                        type=config_type,
+                        source_path=dir_path,
+                        target_path=self.claude_dir / "hooks" / dir_path.name,
                     )
+                    item.install_status = self.get_install_status(item)
+                    items.append(item)
 
         return items
 
@@ -252,4 +259,161 @@ class Installer:
             return True
         except Exception as e:
             print(f"Error creating .claude directory: {e}", file=sys.stderr)
+            return False
+
+    def _compare_files(self, source: Path, target: Path) -> bool:
+        """Compare two files for equality.
+
+        Args:
+            source: Source file path
+            target: Target file path
+
+        Returns:
+            True if files are identical, False otherwise
+        """
+        try:
+            return source.read_bytes() == target.read_bytes()
+        except Exception:
+            return False
+
+    def _compare_directories(self, source: Path, target: Path) -> bool:
+        """Compare two directories recursively.
+
+        Args:
+            source: Source directory path
+            target: Target directory path
+
+        Returns:
+            True if directories are identical, False otherwise
+        """
+        try:
+            # Get all files in both directories
+            source_files = {
+                f.relative_to(source): f for f in source.rglob("*") if f.is_file()
+            }
+            target_files = {
+                f.relative_to(target): f for f in target.rglob("*") if f.is_file()
+            }
+
+            # Check same files exist
+            if source_files.keys() != target_files.keys():
+                return False
+
+            # Compare each file
+            for rel_path in source_files:
+                if not self._compare_files(
+                    source_files[rel_path], target_files[rel_path]
+                ):
+                    return False
+
+            return True
+        except Exception:
+            return False
+
+    def get_install_status(self, item: ConfigItem) -> InstallStatus:
+        """Check if item is installed and if it matches source.
+
+        Args:
+            item: The configuration item to check
+
+        Returns:
+            Installation status of the item
+        """
+        if not item.target_path or not item.target_path.exists():
+            return InstallStatus.NOT_INSTALLED
+
+        # Compare based on file or directory
+        if item.source_path.is_dir():
+            is_current = self._compare_directories(item.source_path, item.target_path)
+        else:
+            is_current = self._compare_files(item.source_path, item.target_path)
+
+        return (
+            InstallStatus.INSTALLED_CURRENT
+            if is_current
+            else InstallStatus.INSTALLED_OUTDATED
+        )
+
+    def uninstall_item(self, item: ConfigItem) -> bool:
+        """Remove an installed configuration item.
+
+        Args:
+            item: The configuration item to uninstall
+
+        Returns:
+            True if uninstallation succeeded, False otherwise
+        """
+        if not item.target_path or not item.target_path.exists():
+            return True  # Already not installed
+
+        try:
+            if item.target_path.is_dir():
+                shutil.rmtree(item.target_path)
+            else:
+                item.target_path.unlink()
+            return True
+        except Exception as e:
+            print(f"Error uninstalling {item.name}: {e}", file=sys.stderr)
+            return False
+
+    def unmerge_hook_settings(self, hook_item: ConfigItem) -> bool:
+        """Remove hook handlers from .claude/settings.json.
+
+        Args:
+            hook_item: The hook item whose handlers should be removed
+
+        Returns:
+            True if unmerge succeeded, False otherwise
+        """
+        settings_file = self.claude_dir / "settings.json"
+
+        if not settings_file.exists():
+            return True  # Nothing to unmerge
+
+        # Read the hook's settings to know what to remove
+        if hook_item.target_path is None:
+            # Try to find handlers from source
+            hook_settings_file = hook_item.source_path / "settings.json"
+        else:
+            hook_settings_file = hook_item.target_path / "settings.json"
+            if not hook_settings_file.exists():
+                hook_settings_file = hook_item.source_path / "settings.json"
+
+        if not hook_settings_file.exists():
+            return True  # No handlers to remove
+
+        try:
+            # Load current settings
+            with open(settings_file) as f:
+                settings = json.load(f)
+
+            # Load hook handlers to remove
+            with open(hook_settings_file) as f:
+                hook_config = json.load(f)
+
+            if "hooks" not in settings or "hooks" not in hook_config:
+                return True
+
+            # Remove handlers for each event
+            for event, handlers_to_remove in hook_config["hooks"].items():
+                if event in settings["hooks"]:
+                    settings["hooks"][event] = [
+                        h
+                        for h in settings["hooks"][event]
+                        if h not in handlers_to_remove
+                    ]
+                    # Clean up empty event lists
+                    if not settings["hooks"][event]:
+                        del settings["hooks"][event]
+
+            # Clean up empty hooks section
+            if not settings["hooks"]:
+                del settings["hooks"]
+
+            # Write updated settings
+            settings_file.write_text(json.dumps(settings, indent=2))
+            return True
+
+        except Exception as e:
+            print(f"Error unmerging hook settings: {e}", file=sys.stderr)
             return False

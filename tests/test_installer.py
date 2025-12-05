@@ -9,7 +9,12 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from claude_tools._internal.installer import ConfigType, ConfigItem, Installer
+from claude_tools._internal.installer import (
+    ConfigType,
+    ConfigItem,
+    Installer,
+    InstallStatus,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -38,10 +43,10 @@ def temp_repo_dir() -> Iterator[Path]:
         skill_dir.mkdir()
         (skill_dir / "SKILL.md").write_text("# Test Skill")
 
-        # Create sample agent
-        agent_dir = repo_path / "agents" / "test-agent"
-        agent_dir.mkdir()
-        (agent_dir / "config.json").write_text("{}")
+        # Create sample agent (agents are .md files, like commands)
+        (repo_path / "agents" / "test-agent.md").write_text(
+            "# Test Agent\n\nTest agent description"
+        )
 
         # Create sample hook
         hook_dir = repo_path / "hooks" / "test-hook"
@@ -280,3 +285,257 @@ class TestConfigItemFields:
         assert hasattr(item, "type")
         assert hasattr(item, "source_path")
         assert hasattr(item, "target_path")
+        assert hasattr(item, "install_status")
+
+
+class TestInstallStatus:
+    """Tests for InstallStatus enum."""
+
+    def test_install_status_values(self) -> None:
+        """InstallStatus enum has expected values."""
+        assert InstallStatus.NOT_INSTALLED.value == "not_installed"
+        assert InstallStatus.INSTALLED_CURRENT.value == "installed_current"
+        assert InstallStatus.INSTALLED_OUTDATED.value == "installed_outdated"
+
+
+class TestInstallStatusDetection:
+    """Tests for installation status detection."""
+
+    def test_get_install_status_not_installed(
+        self, temp_repo_dir: Path, temp_target_dir: Path
+    ) -> None:
+        """Item not in target is detected as NOT_INSTALLED."""
+        installer = Installer(repo_root=temp_repo_dir, target_project=temp_target_dir)
+        items = installer.get_available_items(ConfigType.COMMANDS)
+
+        assert len(items) > 0
+        item = items[0]
+        assert item.install_status == InstallStatus.NOT_INSTALLED
+
+    def test_get_install_status_installed_current(
+        self, temp_repo_dir: Path, temp_target_dir: Path
+    ) -> None:
+        """Item installed and matching source is INSTALLED_CURRENT."""
+        installer = Installer(repo_root=temp_repo_dir, target_project=temp_target_dir)
+        installer.ensure_claude_directory()
+
+        items = installer.get_available_items(ConfigType.COMMANDS)
+        assert len(items) > 0
+        item = items[0]
+
+        # Install the item
+        installer.install_item(item)
+
+        # Re-discover to get updated status
+        items = installer.get_available_items(ConfigType.COMMANDS)
+        item = items[0]
+
+        assert item.install_status == InstallStatus.INSTALLED_CURRENT
+
+    def test_get_install_status_installed_outdated(
+        self, temp_repo_dir: Path, temp_target_dir: Path
+    ) -> None:
+        """Item installed but different from source is INSTALLED_OUTDATED."""
+        installer = Installer(repo_root=temp_repo_dir, target_project=temp_target_dir)
+        installer.ensure_claude_directory()
+
+        items = installer.get_available_items(ConfigType.COMMANDS)
+        assert len(items) > 0
+        item = items[0]
+
+        # Install the item
+        installer.install_item(item)
+
+        # Modify the installed file
+        if item.target_path:
+            item.target_path.write_text("# Modified content")
+
+        # Re-discover to get updated status
+        items = installer.get_available_items(ConfigType.COMMANDS)
+        item = items[0]
+
+        assert item.install_status == InstallStatus.INSTALLED_OUTDATED
+
+
+class TestFileComparison:
+    """Tests for file comparison methods."""
+
+    def test_compare_files_identical(
+        self, temp_repo_dir: Path, temp_target_dir: Path
+    ) -> None:
+        """Identical files compare as equal."""
+        installer = Installer(repo_root=temp_repo_dir, target_project=temp_target_dir)
+
+        file1 = temp_repo_dir / "test1.txt"
+        file2 = temp_repo_dir / "test2.txt"
+        file1.write_text("same content")
+        file2.write_text("same content")
+
+        assert installer._compare_files(file1, file2) is True
+
+    def test_compare_files_different(
+        self, temp_repo_dir: Path, temp_target_dir: Path
+    ) -> None:
+        """Different files compare as not equal."""
+        installer = Installer(repo_root=temp_repo_dir, target_project=temp_target_dir)
+
+        file1 = temp_repo_dir / "test1.txt"
+        file2 = temp_repo_dir / "test2.txt"
+        file1.write_text("content 1")
+        file2.write_text("content 2")
+
+        assert installer._compare_files(file1, file2) is False
+
+    def test_compare_directories_identical(
+        self, temp_repo_dir: Path, temp_target_dir: Path
+    ) -> None:
+        """Identical directories compare as equal."""
+        installer = Installer(repo_root=temp_repo_dir, target_project=temp_target_dir)
+
+        dir1 = temp_repo_dir / "dir1"
+        dir2 = temp_repo_dir / "dir2"
+        dir1.mkdir()
+        dir2.mkdir()
+
+        (dir1 / "file1.txt").write_text("content 1")
+        (dir1 / "file2.txt").write_text("content 2")
+        (dir2 / "file1.txt").write_text("content 1")
+        (dir2 / "file2.txt").write_text("content 2")
+
+        assert installer._compare_directories(dir1, dir2) is True
+
+    def test_compare_directories_different_content(
+        self, temp_repo_dir: Path, temp_target_dir: Path
+    ) -> None:
+        """Directories with different file content compare as not equal."""
+        installer = Installer(repo_root=temp_repo_dir, target_project=temp_target_dir)
+
+        dir1 = temp_repo_dir / "dir1"
+        dir2 = temp_repo_dir / "dir2"
+        dir1.mkdir()
+        dir2.mkdir()
+
+        (dir1 / "file.txt").write_text("content 1")
+        (dir2 / "file.txt").write_text("content 2")
+
+        assert installer._compare_directories(dir1, dir2) is False
+
+    def test_compare_directories_different_files(
+        self, temp_repo_dir: Path, temp_target_dir: Path
+    ) -> None:
+        """Directories with different files compare as not equal."""
+        installer = Installer(repo_root=temp_repo_dir, target_project=temp_target_dir)
+
+        dir1 = temp_repo_dir / "dir1"
+        dir2 = temp_repo_dir / "dir2"
+        dir1.mkdir()
+        dir2.mkdir()
+
+        (dir1 / "file1.txt").write_text("content")
+        (dir2 / "file2.txt").write_text("content")
+
+        assert installer._compare_directories(dir1, dir2) is False
+
+
+class TestUninstall:
+    """Tests for uninstallation functionality."""
+
+    def test_uninstall_item_file(
+        self, temp_repo_dir: Path, temp_target_dir: Path
+    ) -> None:
+        """Uninstall a file item."""
+        installer = Installer(repo_root=temp_repo_dir, target_project=temp_target_dir)
+        installer.ensure_claude_directory()
+
+        items = installer.get_available_items(ConfigType.COMMANDS)
+        assert len(items) > 0
+        item = items[0]
+
+        # Install first
+        installer.install_item(item)
+        assert item.target_path and item.target_path.exists()
+
+        # Uninstall
+        result = installer.uninstall_item(item)
+        assert result is True
+        assert not item.target_path.exists()
+
+    def test_uninstall_item_directory(
+        self, temp_repo_dir: Path, temp_target_dir: Path
+    ) -> None:
+        """Uninstall a directory item."""
+        installer = Installer(repo_root=temp_repo_dir, target_project=temp_target_dir)
+        installer.ensure_claude_directory()
+
+        items = installer.get_available_items(ConfigType.SKILLS)
+        assert len(items) > 0
+        item = items[0]
+
+        # Install first
+        installer.install_item(item)
+        assert item.target_path and item.target_path.exists()
+
+        # Uninstall
+        result = installer.uninstall_item(item)
+        assert result is True
+        assert not item.target_path.exists()
+
+    def test_uninstall_nonexistent(
+        self, temp_repo_dir: Path, temp_target_dir: Path
+    ) -> None:
+        """Uninstalling non-existent item succeeds (idempotent)."""
+        installer = Installer(repo_root=temp_repo_dir, target_project=temp_target_dir)
+
+        items = installer.get_available_items(ConfigType.COMMANDS)
+        assert len(items) > 0
+        item = items[0]
+
+        # Uninstall without installing first
+        result = installer.uninstall_item(item)
+        assert result is True
+
+
+class TestUnmergeHookSettings:
+    """Tests for hook settings unmerge functionality."""
+
+    def test_unmerge_hook_settings(
+        self, temp_repo_dir: Path, temp_target_dir: Path
+    ) -> None:
+        """Unmerge removes hook handlers from settings.json."""
+        installer = Installer(repo_root=temp_repo_dir, target_project=temp_target_dir)
+        installer.ensure_claude_directory()
+
+        # Get hook items
+        hooks = installer.get_available_items(ConfigType.HOOKS)
+        assert len(hooks) > 0
+        hook = hooks[0]
+
+        # Install hook and merge settings
+        installer.install_item(hook)
+        installer.merge_hook_settings([hook])
+
+        # Verify settings were merged
+        settings_file = temp_target_dir / ".claude" / "settings.json"
+        assert settings_file.exists()
+
+        with open(settings_file) as f:
+            settings = json.load(f)
+        assert "hooks" in settings
+
+        # Unmerge
+        result = installer.unmerge_hook_settings(hook)
+        assert result is True
+
+    def test_unmerge_hook_settings_no_file(
+        self, temp_repo_dir: Path, temp_target_dir: Path
+    ) -> None:
+        """Unmerge succeeds when settings.json doesn't exist."""
+        installer = Installer(repo_root=temp_repo_dir, target_project=temp_target_dir)
+
+        hooks = installer.get_available_items(ConfigType.HOOKS)
+        assert len(hooks) > 0
+        hook = hooks[0]
+
+        # Unmerge without settings file
+        result = installer.unmerge_hook_settings(hook)
+        assert result is True

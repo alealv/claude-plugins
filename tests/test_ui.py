@@ -2,26 +2,12 @@
 
 from __future__ import annotations
 
-from unittest.mock import patch
+from pathlib import Path
 
 import pytest
 
-from claude_tools._internal.installer import ConfigType, ConfigItem
-from claude_tools._internal.ui import Color, Focus, UIState, InstallUI
-
-
-class TestColor:
-    """Tests for ANSI color codes."""
-
-    def test_color_constants(self) -> None:
-        """Color class has expected constants."""
-        assert hasattr(Color, "RESET")
-        assert hasattr(Color, "BOLD")
-        assert hasattr(Color, "GREEN")
-        assert hasattr(Color, "BLUE")
-        assert hasattr(Color, "CYAN")
-        assert hasattr(Color, "RED")
-        assert hasattr(Color, "YELLOW")
+from claude_tools._internal.installer import ConfigType, ConfigItem, InstallStatus
+from claude_tools._internal.ui import Focus, ItemAction, UIState, InstallUI
 
 
 class TestFocus:
@@ -34,6 +20,16 @@ class TestFocus:
         assert Focus.OK.value == "ok"
 
 
+class TestItemAction:
+    """Tests for ItemAction enum."""
+
+    def test_item_action_values(self) -> None:
+        """ItemAction enum has expected values."""
+        assert ItemAction.NONE.value == "none"
+        assert ItemAction.INSTALL.value == "install"
+        assert ItemAction.UNINSTALL.value == "uninstall"
+
+
 class TestUIState:
     """Tests for UIState dataclass."""
 
@@ -44,28 +40,31 @@ class TestUIState:
             current_row=0,
             scroll_offset=0,
             focus=Focus.LIST,
-            selected_items=set(),
+            item_actions={},
         )
 
         assert state.current_tab == 0
         assert state.current_row == 0
         assert state.scroll_offset == 0
         assert state.focus == Focus.LIST
-        assert state.selected_items == set()
+        assert state.item_actions == {}
 
-    def test_ui_state_selected_items(self) -> None:
-        """UIState can track selected items."""
-        selected = {"item1", "item2"}
+    def test_ui_state_item_actions(self) -> None:
+        """UIState can track item actions."""
+        actions = {
+            "commands:cmd1": ItemAction.INSTALL,
+            "hooks:hook1": ItemAction.UNINSTALL,
+        }
         state = UIState(
             current_tab=0,
             current_row=0,
             scroll_offset=0,
             focus=Focus.LIST,
-            selected_items=selected,
+            item_actions=actions,
         )
 
-        assert "item1" in state.selected_items
-        assert "item2" in state.selected_items
+        assert state.item_actions["commands:cmd1"] == ItemAction.INSTALL
+        assert state.item_actions["hooks:hook1"] == ItemAction.UNINSTALL
 
 
 class TestInstallUI:
@@ -74,8 +73,6 @@ class TestInstallUI:
     @pytest.fixture
     def sample_items(self) -> dict[ConfigType, list[ConfigItem]]:
         """Create sample configuration items."""
-        from pathlib import Path
-
         return {
             ConfigType.COMMANDS: [
                 ConfigItem(
@@ -83,12 +80,14 @@ class TestInstallUI:
                     type=ConfigType.COMMANDS,
                     source_path=Path("/source/commands/cmd1.md"),
                     target_path=Path("/target/.claude/commands/cmd1.md"),
+                    install_status=InstallStatus.NOT_INSTALLED,
                 ),
                 ConfigItem(
                     name="cmd2",
                     type=ConfigType.COMMANDS,
                     source_path=Path("/source/commands/cmd2.md"),
                     target_path=Path("/target/.claude/commands/cmd2.md"),
+                    install_status=InstallStatus.INSTALLED_CURRENT,
                 ),
             ],
             ConfigType.SKILLS: [
@@ -97,6 +96,7 @@ class TestInstallUI:
                     type=ConfigType.SKILLS,
                     source_path=Path("/source/skills/skill1"),
                     target_path=Path("/target/.claude/skills/skill1"),
+                    install_status=InstallStatus.INSTALLED_OUTDATED,
                 ),
             ],
             ConfigType.AGENTS: [],
@@ -106,6 +106,7 @@ class TestInstallUI:
                     type=ConfigType.HOOKS,
                     source_path=Path("/source/hooks/hook1"),
                     target_path=Path("/target/.claude/hooks/hook1"),
+                    install_status=InstallStatus.NOT_INSTALLED,
                 ),
             ],
         }
@@ -124,7 +125,7 @@ class TestInstallUI:
 
         assert ui.state.current_tab == 0
         assert ui.state.focus == Focus.LIST
-        assert isinstance(ui.state.selected_items, dict)
+        assert isinstance(ui.state.item_actions, dict)
 
     def test_get_current_items_commands(self, sample_items: dict) -> None:
         """Get items for commands tab."""
@@ -166,64 +167,130 @@ class TestInstallUI:
 
         assert ui.state.current_row >= 0  # May stay at 0 if no more items
 
-    def test_handle_tab_switching(self, sample_items: dict) -> None:
-        """Handle tab switching."""
+    def test_handle_tab_focus_switching(self, sample_items: dict) -> None:
+        """Handle tab key switches focus between LIST, CANCEL, OK."""
         ui = InstallUI(sample_items, "/target/project")
-        initial_tab = ui.state.current_tab
+        assert ui.state.focus == Focus.LIST
 
         ui.handle_tab()
+        assert ui.state.focus == Focus.CANCEL
 
-        assert ui.state.current_tab != initial_tab or initial_tab == 3  # Wrap around
+        ui.handle_tab()
+        assert ui.state.focus == Focus.OK
 
-    def test_handle_space_toggles_selection(self, sample_items: dict) -> None:
-        """Handle space key to toggle item selection."""
+        ui.handle_tab()
+        assert ui.state.focus == Focus.LIST
+
+    def test_handle_space_not_installed(self, sample_items: dict) -> None:
+        """Handle space key for NOT_INSTALLED item cycles NONE → INSTALL → NONE."""
         ui = InstallUI(sample_items, "/target/project")
         ui.state.current_tab = 0  # Commands tab
-        ui.state.current_row = 0
+        ui.state.current_row = 0  # cmd1 is NOT_INSTALLED
 
         items = ui.get_current_items()
-        if items:
-            item = items[0]
-            key = f"{item.type.value}:{item.name}"
+        item = items[0]
+        key = f"{item.type.value}:{item.name}"
 
-            # Initially not selected
-            assert not ui.state.selected_items.get(key, False)
+        # Initially NONE
+        assert ui.state.item_actions.get(key, ItemAction.NONE) == ItemAction.NONE
 
-            # Toggle selection
-            ui.handle_space()
-            assert ui.state.selected_items.get(key) is True
+        # Toggle to INSTALL
+        ui.handle_space()
+        assert ui.state.item_actions.get(key) == ItemAction.INSTALL
 
-            # Toggle again to deselect
-            ui.handle_space()
-            assert ui.state.selected_items.get(key) is False
+        # Toggle back to NONE
+        ui.handle_space()
+        assert ui.state.item_actions.get(key) == ItemAction.NONE
 
-    def test_get_selected_items(self, sample_items: dict) -> None:
-        """Get all selected items across tabs."""
+    def test_handle_space_installed_current(self, sample_items: dict) -> None:
+        """Handle space key for INSTALLED_CURRENT item cycles NONE → UNINSTALL → NONE."""
+        ui = InstallUI(sample_items, "/target/project")
+        ui.state.current_tab = 0  # Commands tab
+        ui.state.current_row = 1  # cmd2 is INSTALLED_CURRENT
+
+        items = ui.get_current_items()
+        item = items[1]
+        key = f"{item.type.value}:{item.name}"
+
+        # Initially NONE
+        assert ui.state.item_actions.get(key, ItemAction.NONE) == ItemAction.NONE
+
+        # Toggle to UNINSTALL
+        ui.handle_space()
+        assert ui.state.item_actions.get(key) == ItemAction.UNINSTALL
+
+        # Toggle back to NONE
+        ui.handle_space()
+        assert ui.state.item_actions.get(key) == ItemAction.NONE
+
+    def test_handle_space_installed_outdated(self, sample_items: dict) -> None:
+        """Handle space key for INSTALLED_OUTDATED item cycles NONE → INSTALL → NONE."""
+        ui = InstallUI(sample_items, "/target/project")
+        ui.state.current_tab = 1  # Skills tab
+        ui.state.current_row = 0  # skill1 is INSTALLED_OUTDATED
+
+        items = ui.get_current_items()
+        item = items[0]
+        key = f"{item.type.value}:{item.name}"
+
+        # Initially NONE
+        assert ui.state.item_actions.get(key, ItemAction.NONE) == ItemAction.NONE
+
+        # Toggle to INSTALL (update)
+        ui.handle_space()
+        assert ui.state.item_actions.get(key) == ItemAction.INSTALL
+
+        # Toggle back to NONE
+        ui.handle_space()
+        assert ui.state.item_actions.get(key) == ItemAction.NONE
+
+    def test_get_items_to_install(self, sample_items: dict) -> None:
+        """Get all items with INSTALL action."""
         ui = InstallUI(sample_items, "/target/project")
 
-        # Select some items
-        commands = sample_items[ConfigType.COMMANDS]
-        if commands:
-            item = commands[0]
-            key = f"{item.type.value}:{item.name}"
-            ui.state.selected_items[key] = True
+        # Mark items for install
+        ui.state.item_actions["commands:cmd1"] = ItemAction.INSTALL
+        ui.state.item_actions["skills:skill1"] = ItemAction.INSTALL
+
+        items_to_install = ui.get_items_to_install()
+
+        assert len(items_to_install) == 2
+        names = [item.name for item in items_to_install]
+        assert "cmd1" in names
+        assert "skill1" in names
+
+    def test_get_items_to_uninstall(self, sample_items: dict) -> None:
+        """Get all items with UNINSTALL action."""
+        ui = InstallUI(sample_items, "/target/project")
+
+        # Mark item for uninstall
+        ui.state.item_actions["commands:cmd2"] = ItemAction.UNINSTALL
+
+        items_to_uninstall = ui.get_items_to_uninstall()
+
+        assert len(items_to_uninstall) == 1
+        assert items_to_uninstall[0].name == "cmd2"
+
+    def test_get_selected_items_backward_compat(self, sample_items: dict) -> None:
+        """get_selected_items returns same as get_items_to_install."""
+        ui = InstallUI(sample_items, "/target/project")
+
+        ui.state.item_actions["commands:cmd1"] = ItemAction.INSTALL
 
         selected = ui.get_selected_items()
+        to_install = ui.get_items_to_install()
 
-        assert isinstance(selected, list)
-        assert all(isinstance(item, ConfigItem) for item in selected)
+        assert selected == to_install
 
-    def test_ui_draw_does_not_crash(self, sample_items: dict) -> None:
-        """UI draw method doesn't crash with valid items."""
+    def test_ui_render_does_not_crash(self, sample_items: dict) -> None:
+        """UI render method doesn't crash with valid items."""
         ui = InstallUI(sample_items, "/target/project")
 
-        # Mock stdout to prevent actual output
-        with patch("sys.stdout"):
-            try:
-                ui.draw()
-                assert True
-            except Exception as e:
-                pytest.fail(f"draw() raised {type(e).__name__}: {e}")
+        try:
+            result = ui.render()
+            assert result is not None
+        except Exception as e:
+            pytest.fail(f"render() raised {type(e).__name__}: {e}")
 
     def test_ui_handles_empty_items(self) -> None:
         """UI handles empty configuration items gracefully."""
@@ -244,35 +311,55 @@ class TestInstallUI:
 class TestUINavigation:
     """Tests for complex navigation scenarios."""
 
-    def test_left_right_navigation_buttons(
-        self, sample_items: dict | None = None
-    ) -> None:
-        """Test left/right arrow navigation between buttons."""
-        if sample_items is None:
-            from pathlib import Path
-
-            sample_items = {
-                ConfigType.COMMANDS: [
-                    ConfigItem(
-                        name="cmd1",
-                        type=ConfigType.COMMANDS,
-                        source_path=Path("/source/cmd1.md"),
-                        target_path=Path("/target/cmd1.md"),
-                    ),
-                ],
-                ConfigType.SKILLS: [],
-                ConfigType.AGENTS: [],
-                ConfigType.HOOKS: [],
-            }
+    def test_left_right_navigation_tabs(self) -> None:
+        """Test left/right arrow navigation between tabs."""
+        sample_items = {
+            ConfigType.COMMANDS: [
+                ConfigItem(
+                    name="cmd1",
+                    type=ConfigType.COMMANDS,
+                    source_path=Path("/source/cmd1.md"),
+                    target_path=Path("/target/cmd1.md"),
+                    install_status=InstallStatus.NOT_INSTALLED,
+                ),
+            ],
+            ConfigType.SKILLS: [],
+            ConfigType.AGENTS: [],
+            ConfigType.HOOKS: [],
+        }
 
         ui = InstallUI(sample_items, "/target/project")
 
-        # Start with LIST focus
-        assert ui.state.focus == Focus.LIST
+        # Start on first tab
+        assert ui.state.current_tab == 0
 
-        # Navigate to buttons
+        # Move right
+        ui.handle_right()
+        assert ui.state.current_tab == 1
+
+        # Move left
+        ui.handle_left()
+        assert ui.state.current_tab == 0
+
+    def test_left_right_navigation_buttons(self) -> None:
+        """Test left/right arrow navigation between buttons."""
+        sample_items = {
+            ConfigType.COMMANDS: [],
+            ConfigType.SKILLS: [],
+            ConfigType.AGENTS: [],
+            ConfigType.HOOKS: [],
+        }
+
+        ui = InstallUI(sample_items, "/target/project")
+
+        # Navigate to CANCEL
         ui.state.focus = Focus.CANCEL
         assert ui.state.focus == Focus.CANCEL
 
-        ui.state.focus = Focus.OK
+        # Move right to OK
+        ui.handle_right()
         assert ui.state.focus == Focus.OK
+
+        # Move left back to CANCEL
+        ui.handle_left()
+        assert ui.state.focus == Focus.CANCEL

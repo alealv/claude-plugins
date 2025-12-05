@@ -12,8 +12,6 @@
 from __future__ import annotations
 
 import argparse
-import io
-import os
 import signal
 import sys
 import termios
@@ -92,7 +90,9 @@ def run_interactive_installer(installer: Installer, ui: InstallUI) -> bool:
     # Check if stdin is a TTY
     if not sys.stdin.isatty():
         temp_console = Console()
-        temp_console.print("[red]Error: stdin is not a TTY. Please run this command in an interactive terminal.[/red]")
+        temp_console.print(
+            "[red]Error: stdin is not a TTY. Please run this command in an interactive terminal.[/red]"
+        )
         return False
 
     old_settings = None
@@ -134,6 +134,7 @@ def run_interactive_installer(installer: Installer, ui: InstallUI) -> bool:
             try:
                 # Make stdin non-blocking temporarily
                 import select
+
                 if select.select([sys.stdin], [], [], 0.1)[0]:
                     ch = sys.stdin.read(1)
 
@@ -267,52 +268,97 @@ def main(args: list[str] | None = None) -> int:
         console.print("[yellow]Installation cancelled.[/yellow]")
         return 0
 
-    # Get selected items
-    selected_items = ui.get_selected_items()
+    # Get items to install and uninstall
+    items_to_install = ui.get_items_to_install()
+    items_to_uninstall = ui.get_items_to_uninstall()
 
-    if not selected_items:
-        console.print("[yellow]No items selected. Nothing to install.[/yellow]")
+    if not items_to_install and not items_to_uninstall:
+        console.print("[yellow]No changes selected.[/yellow]")
         return 0
 
-    # Install selected items
-    console.print("[bold]Installing selected items...[/bold]")
-    console.print()
+    successful = 0
+    failed = 0
 
-    # Separate items by type
-    hook_items = [item for item in selected_items if item.type == ConfigType.HOOKS]
-    other_items = [item for item in selected_items if item.type != ConfigType.HOOKS]
+    # Uninstall items first
+    if items_to_uninstall:
+        console.print("[bold]Uninstalling items...[/bold]")
+        console.print()
 
-    # Install non-hook items
-    successful, failed = installer.install_items(other_items)
-    for item in other_items:
-        console.print(f"[green]✓[/green] Installed {item.type.value}: {item.name}")
+        hooks_to_uninstall = [
+            item for item in items_to_uninstall if item.type == ConfigType.HOOKS
+        ]
 
-    # Install hook items and merge settings
-    if hook_items:
-        hook_successful, hook_failed = installer.install_items(hook_items)
-        for item in hook_items:
-            console.print(f"[green]✓[/green] Installed hook: {item.name}")
+        for item in items_to_uninstall:
+            if installer.uninstall_item(item):
+                console.print(
+                    f"[red]✗[/red] Uninstalled {item.type.value}: {item.name}"
+                )
+                successful += 1
+            else:
+                console.print(
+                    f"[yellow]⚠[/yellow] Failed to uninstall {item.type.value}: {item.name}"
+                )
+                failed += 1
 
-        # Merge hook settings
-        if hook_successful > 0:
+        # Also remove hook handlers from settings.json
+        for hook in hooks_to_uninstall:
+            if installer.unmerge_hook_settings(hook):
+                console.print(
+                    f"[blue]✓[/blue] Removed {hook.name} handlers from settings.json"
+                )
+
+        console.print()
+
+    # Install items
+    if items_to_install:
+        console.print("[bold]Installing items...[/bold]")
+        console.print()
+
+        # Separate items by type
+        hook_items = [
+            item for item in items_to_install if item.type == ConfigType.HOOKS
+        ]
+        other_items = [
+            item for item in items_to_install if item.type != ConfigType.HOOKS
+        ]
+
+        # Install non-hook items
+        for item in other_items:
+            if installer.install_item(item):
+                console.print(
+                    f"[green]✓[/green] Installed {item.type.value}: {item.name}"
+                )
+                successful += 1
+            else:
+                console.print(
+                    f"[yellow]⚠[/yellow] Failed to install {item.type.value}: {item.name}"
+                )
+                failed += 1
+
+        # Install hook items and merge settings
+        if hook_items:
+            for item in hook_items:
+                if installer.install_item(item):
+                    console.print(f"[green]✓[/green] Installed hook: {item.name}")
+                    successful += 1
+                else:
+                    console.print(
+                        f"[yellow]⚠[/yellow] Failed to install hook: {item.name}"
+                    )
+                    failed += 1
+
+            # Merge hook settings
             if installer.merge_hook_settings(hook_items):
                 console.print(
                     "[blue]✓[/blue] Merged hook settings into .claude/settings.json"
                 )
             else:
-                console.print(
-                    "[yellow]⚠[/yellow] Failed to merge some hook settings"
-                )
-
-        successful += hook_successful
-        failed += hook_failed
+                console.print("[yellow]⚠[/yellow] Failed to merge some hook settings")
 
     console.print()
-    console.print(
-        f"[bold green]Installation complete![/bold green] Installed {successful} item(s)."
-    )
+    console.print(f"[bold green]Complete![/bold green] {successful} item(s) processed.")
     if failed > 0:
-        console.print(f"[yellow]Failed to install {failed} item(s).[/yellow]")
+        console.print(f"[yellow]Failed to process {failed} item(s).[/yellow]")
         return 1
 
     return 0
