@@ -1,3 +1,9 @@
+---
+description: Make a versioned release of the repository
+argument-hint: [version] | patch | minor | major
+allowed-tools: Read, Bash, Edit, Write
+---
+
 Make a release of this repository.
 
 Version or release type: "$ARGUMENTS"

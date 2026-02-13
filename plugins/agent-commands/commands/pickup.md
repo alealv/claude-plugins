@@ -1,3 +1,9 @@
+---
+description: Resume work from a previous handoff session
+argument-hint: [handoff-filename]
+allowed-tools: Read, Bash(ls:*), Bash(grep:*), Bash(echo:*), Glob
+---
+
 Resumes work from a previous handoff session which are stored in `.claude/handoffs`.
 
 The handoff folder might not exist if there are none.

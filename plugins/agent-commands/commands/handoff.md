@@ -1,3 +1,9 @@
+---
+description: Create a detailed handoff plan for continuing work in a new session
+argument-hint: [purpose]
+allowed-tools: Read, Grep, Glob, Bash(git:*), Write
+---
+
 Creates a detailed handoff plan of the conversation for continuing the work in a new session.
 
 The user specified purpose:
