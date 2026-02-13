@@ -1,99 +1,70 @@
-# claude-tools
+# claude-plugins
 
-[![ci](https://github.com/alealv/claude-tools/workflows/ci/badge.svg)](https://github.com/alealv/claude-tools/actions?query=workflow%3Aci)
-[![documentation](https://img.shields.io/badge/docs-mkdocs-708FCC.svg?style=flat)](https://alealv.github.io/claude-tools/)
-[![pypi version](https://img.shields.io/pypi/v/claude-tools.svg)](https://pypi.org/project/claude-tools/)
-[![gitter](https://img.shields.io/badge/matrix-chat-4DB798.svg?style=flat)](https://app.gitter.im/#/room/#claude-tools:gitter.im)
-
-Installer for common Claude agents, skills, hooks and commands
+Personal collection of Claude Code plugins for development workflows, task automation, and specialized tools.
 
 ## Installation
 
-Install with pip:
-```bash
-pip install claude-tools
+Add this marketplace to Claude Code:
+
+```
+/plugin marketplace add aalvarez/claude-plugins
 ```
 
-Or with [`uv`](https://docs.astral.sh/uv/):
-```bash
-uv tool install claude-tools
+Then install individual plugins:
+
+```
+/plugin install commit-commands@claude-plugins
+/plugin install justfile-expert@claude-plugins
+/plugin install tmux-tools@claude-plugins
+/plugin install sudolang-prompter@claude-plugins
+/plugin install web-browser@claude-plugins
+/plugin install agent-commands@claude-plugins
 ```
 
-Or from source:
-```bash
-git clone https://github.com/alealv/claude-tools.git
-cd claude-tools
-uv tool install -e .
-```
+## Available Plugins
 
-## Quick Start
+| Plugin | Type | Description |
+|--------|------|-------------|
+| **commit-commands** | Commands | Smart commit, code review, and test generation |
+| **justfile-expert** | Skill | Expert guidance for Just task runner and justfiles |
+| **tmux-tools** | Skill | Remote control tmux sessions for interactive CLIs |
+| **sudolang-prompter** | Skill | Create efficient LLM prompts using SudoLang syntax |
+| **web-browser** | Skill | Browse and interact with web pages via Chrome DevTools Protocol |
+| **agent-commands** | Commands | Session handoff, pickup, release, and changelog workflows |
 
-### Run the installer
-```bash
-# Interactive mode - select configurations to install
-claude-tools /path/to/your/project
-```
+## Plugin Details
 
-Or with default path prompting:
-```bash
-claude-tools
-```
+### commit-commands
 
-### What it does
-The installer discovers and installs Claude Code configurations:
-- **Commands**: Custom slash commands (e.g., `/commit`, `/review`)
-- **Skills**: Autonomous capabilities for Claude
-- **Hooks**: Automation scripts (e.g., auto-commit on task completion)
-- **Agents**: Task-specific Claude configurations
+Three slash commands for git workflows:
+- `/commit` - Create well-formatted conventional commits with emoji
+- `/code-review` - Comprehensive code quality, security, and architecture review
+- `/generate-tests` - Generate test suites with unit, integration, and edge case coverage
 
-### Keybindings
-The installer supports both arrow keys and VIM keybindings:
+### justfile-expert
 
-**Navigation:**
-- `↑` `↓` or `k` `j` - Navigate through items in the list
-- `←` `→` or `h` `l` - Switch between tabs (COMMANDS, SKILLS, AGENTS, HOOKS)
-- `Tab` - Switch to next tab
+Expertise in the Just task runner: recipe syntax, attributes, groups, modules, cross-platform patterns, and troubleshooting.
 
-**Selection:**
-- `Space` or `x` - Toggle selection of current item
+### tmux-tools
 
-**Actions:**
-- `Enter` - Confirm selection and proceed with installation
-- `Esc` or `q` - Cancel and exit installer
+Remote control tmux sessions for interactive CLIs (python, gdb, etc.) by sending keystrokes and scraping pane output.
 
-## Development
+### sudolang-prompter
 
-### Setup
-```bash
-just setup
-just install-hooks
-```
+Build structured LLM prompts using SudoLang pseudolanguage — constraints, state management, pipes, and commands.
 
-### Run tests
-```bash
-just test
-just test-cov        # with coverage
-```
+### web-browser
 
-### Code quality
-```bash
-just fmt             # format code
-just lint            # lint code
-just quality         # all checks
-```
+Browse the web via Chrome DevTools Protocol: navigate, evaluate JS, take screenshots, and pick elements.
 
-### Build and publish
-```bash
-just build
-just publish-test    # test PyPI
-just publish         # production PyPI
-```
+### agent-commands
 
-See `justfile` for all available commands or run `just` to list recipes.
+Session management and release workflows:
+- `/handoff` - Create a detailed handoff plan for continuing work in a new session
+- `/pickup` - Resume work from a previous handoff
+- `/make-release` - Create a versioned release
+- `/update-changelog` - Update CHANGELOG.md with recent changes
 
-## Documentation
+## License
 
-For detailed documentation, see:
-- [`docs/`](./docs/) - Complete documentation
-- [`docs/claude-configuration.md`](./docs/claude-configuration.md) - Configuration guide
-- [`hooks/auto-commit/README.md`](./hooks/auto-commit/README.md) - Auto-commit hook details
+See [LICENSE](LICENSE) for details.
