@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "claude-plugins",
+  "name": "alealv-plugins",
   "version": "1.0.0",
   "description": "Personal collection of Claude Code plugins for development workflows, task automation, and specialized tools",
   "owner": {
