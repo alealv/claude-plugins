@@ -1,0 +1,8 @@
+{
+  "name": "justfile-expert",
+  "version": "1.0.0",
+  "description": "Expert guidance for Just task runner and justfiles",
+  "author": {
+    "name": "aalvarez"
+  }
+}
