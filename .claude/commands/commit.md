@@ -12,9 +12,8 @@ Create a well-formatted commit: $ARGUMENTS
 
 - Git status: !`git status --porcelain`
 - Current branch: !`git branch --show-current`
-- Staged changes: !`git diff --cached --stat`
-- Unstaged changes: !`git diff --stat`
-- Recent commits: !`git log --oneline -5`
+- Full diff (staged + unstaged): !`git diff HEAD`
+- Recent commits: !`git log --oneline -10`
 
 ## Principles
 
@@ -209,3 +208,7 @@ Refs: AUTH-42
 - **Conflicts**: Stop and inform user
 - **Detached HEAD**: Warn user before proceeding
 - **Hook failures**: Report which hook failed and why
+
+## Efficiency
+
+Be concise. Stage, commit, and verify using parallel tool calls where possible. Do not send unnecessary text beyond the final commit report.
