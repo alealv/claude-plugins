@@ -1,0 +1,59 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "claude-plugins",
+  "version": "1.0.0",
+  "description": "Personal collection of Claude Code plugins for development workflows, task automation, and specialized tools",
+  "owner": {
+    "name": "aalvarez"
+  },
+  "plugins": [
+    {
+      "name": "commit-commands",
+      "description": "Git workflow commands: smart commit, code review, and test generation",
+      "version": "1.0.0",
+      "source": "./plugins/commit-commands",
+      "category": "development",
+      "keywords": ["git", "commit", "review", "testing"]
+    },
+    {
+      "name": "justfile-expert",
+      "description": "Expert guidance for Just task runner and justfiles",
+      "version": "1.0.0",
+      "source": "./plugins/justfile-expert",
+      "category": "development",
+      "keywords": ["just", "justfile", "task-runner", "build"]
+    },
+    {
+      "name": "tmux-tools",
+      "description": "Remote control tmux sessions for interactive CLIs",
+      "version": "1.0.0",
+      "source": "./plugins/tmux-tools",
+      "category": "development",
+      "keywords": ["tmux", "terminal", "session"]
+    },
+    {
+      "name": "sudolang-prompter",
+      "description": "Create efficient LLM prompts using SudoLang pseudolanguage syntax",
+      "version": "1.0.0",
+      "source": "./plugins/sudolang-prompter",
+      "category": "productivity",
+      "keywords": ["prompt-engineering", "sudolang", "llm"]
+    },
+    {
+      "name": "web-browser",
+      "description": "Browse and interact with web pages via Chrome DevTools Protocol",
+      "version": "1.0.0",
+      "source": "./plugins/web-browser",
+      "category": "development",
+      "keywords": ["browser", "chrome", "cdp", "web"]
+    },
+    {
+      "name": "agent-commands",
+      "description": "Session handoff, pickup, release, and changelog workflow commands",
+      "version": "1.0.0",
+      "source": "./plugins/agent-commands",
+      "category": "productivity",
+      "keywords": ["handoff", "session", "release", "workflow"]
+    }
+  ]
+}
