@@ -9,7 +9,6 @@
 ```
 .claude-plugin/marketplace.json  # Marketplace catalog ($schema-validated)
 plugins/
-  agent-commands/                # Session handoff, pickup, release, changelog (commands)
   justfile-expert/               # Just task runner guidance (skill + references)
   zellij-tools/                  # Zellij terminal multiplexer control (skill + shell tools)
 ```

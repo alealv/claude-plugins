@@ -1,8 +1,0 @@
-{
-  "name": "agent-commands",
-  "version": "1.0.0",
-  "description": "Session handoff, pickup, release, and changelog workflow commands",
-  "author": {
-    "name": "aalvarez"
-  }
-}

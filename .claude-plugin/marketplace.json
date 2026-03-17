@@ -15,15 +15,7 @@
       "category": "development",
       "tags": ["just", "justfile", "task-runner", "build"]
     },
-    {
-      "name": "agent-commands",
-      "description": "Session handoff, pickup, release, and changelog workflow commands",
-      "version": "1.0.0",
-      "source": "./plugins/agent-commands",
-      "category": "productivity",
-      "tags": ["handoff", "session", "release", "workflow"]
-    },
-    {
+{
       "name": "zellij-tools",
       "description": "Remote control Zellij terminal multiplexer sessions for interactive CLIs and parallel workflows",
       "version": "1.0.0",
