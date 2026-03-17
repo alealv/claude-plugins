@@ -37,8 +37,13 @@ Your plan should include the following sections:
 3. **Files and Code Sections**: Enumerate specific files and code sections examined, modified, or created. Pay special attention to the most recent messages and include full code snippets where applicable and include a summary of why this file read or edit is important.
 4. **Problem Solving**: Document problems solved and any ongoing troubleshooting efforts.
 5. **Pending Tasks**: Outline any pending tasks that you have explicitly been asked to work on.
-6. **Current Work**: Describe in detail precisely what was being worked on immediately before this handoff request, paying special attention to the most recent messages from both user and assistant. Include file names and code snippets where applicable.
-7. **Optional Next Step**: List the next step that you will take that is related to the most recent work you were doing. IMPORTANT: ensure that this step is DIRECTLY in line with the user's explicit requests, and the task you were working on immediately before this handoff request. If your last task was concluded, then only list next steps if they are explicitly in line with the users request. Do not start on tangential requests without confirming with the user first.
+6. **Environment State**: Capture the current environment so the next session can orient quickly:
+   - Current git branch and last commit hash
+   - Uncommitted changes (staged and unstaged)
+   - Any running background services or dev servers relevant to the task
+   - Active feature flags or environment variables that matter
+7. **Current Work**: Describe in detail precisely what was being worked on immediately before this handoff request, paying special attention to the most recent messages from both user and assistant. Include file names and code snippets where applicable.
+8. **Optional Next Step**: List the next step that you will take that is related to the most recent work you were doing. IMPORTANT: ensure that this step is DIRECTLY in line with the user's explicit requests, and the task you were working on immediately before this handoff request. If your last task was concluded, then only list next steps if they are explicitly in line with the users request. Do not start on tangential requests without confirming with the user first.
 
 Additionally create a "slug" for this handoff.  The "slug" is how we will refer to it later in a few places.  Examples:
 
@@ -48,7 +53,7 @@ Additionally create a "slug" for this handoff.  The "slug" is how we will refer 
 
 Together with the slug create a "Readable Summary".  Examples:
 
-* Implement Currnet User API Handler
+* Implement Current User API Handler
 * Implement Authentication
 * Fix Issue #42
 

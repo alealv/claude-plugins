@@ -73,13 +73,15 @@ path := join(home_directory(), ".config", "app")
 
 ### Environment Functions
 
+> **WARNING: `env_var()` and `env_var_or_default()` are deprecated.**
+> Always use `env()` instead. The old functions will be removed in a future release.
+>
+> - `env_var('KEY')` --> use `env('KEY')`
+> - `env_var_or_default('KEY', 'default')` --> use `env('KEY', 'default')`
+
 ```just
 env('KEY')                   # Get env var, error if not set (v1.15.0)
 env('KEY', 'default')        # Get env var with default (v1.15.0)
-
-# Deprecated aliases
-env_var('KEY')               # Use env('KEY') instead
-env_var_or_default('KEY', 'default')  # Use env('KEY', 'default') instead
 ```
 
 ### Executable Functions

@@ -6,5 +6,8 @@
 .DS_Store
 Thumbs.db
 
-# node (for web-browser plugin)
+# node
 node_modules/
+
+# python
+.uv/

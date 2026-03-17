@@ -1,8 +1,0 @@
-{
-  "name": "commit-commands",
-  "version": "1.0.0",
-  "description": "Git workflow commands: smart commit, code review, and test generation",
-  "author": {
-    "name": "aalvarez"
-  }
-}

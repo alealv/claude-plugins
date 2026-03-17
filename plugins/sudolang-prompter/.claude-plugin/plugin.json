@@ -1,8 +1,0 @@
-{
-  "name": "sudolang-prompter",
-  "version": "1.0.0",
-  "description": "Create efficient LLM prompts using SudoLang pseudolanguage syntax",
-  "author": {
-    "name": "aalvarez"
-  }
-}

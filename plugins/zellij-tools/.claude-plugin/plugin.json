@@ -1,0 +1,8 @@
+{
+  "name": "zellij-tools",
+  "version": "1.0.0",
+  "description": "Remote control Zellij terminal multiplexer sessions for interactive CLIs and parallel workflows",
+  "author": {
+    "name": "aalvarez"
+  }
+}

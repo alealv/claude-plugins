@@ -4,7 +4,7 @@ argument-hint: [baseline-version]
 allowed-tools: Read, Edit, Bash(git:*)
 ---
 
-Please update the `CHANGELOG.md` for thie repository with changes between the last release and the current version (`main`) which were not incorporated yet.
+Please update the `CHANGELOG.md` for this repository with changes between the last release and the current version (`main`) which were not incorporated yet.
 
 Base line version: "$ARGUMENTS"
 

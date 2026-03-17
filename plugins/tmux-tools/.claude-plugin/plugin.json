@@ -1,8 +1,0 @@
-{
-  "name": "tmux-tools",
-  "version": "1.0.0",
-  "description": "Remote control tmux sessions for interactive CLIs",
-  "author": {
-    "name": "aalvarez"
-  }
-}

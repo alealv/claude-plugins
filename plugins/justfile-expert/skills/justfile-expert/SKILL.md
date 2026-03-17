@@ -74,16 +74,8 @@ Both forms are valid for single-argument attributes:
 [group: 'build']    # Colon shorthand form
 ```
 
-Multiple attributes can be combined:
+Multiple attributes can be comma-separated or on separate lines:
 ```just
-# On separate lines
-[group('build')]
-[private]
-[linux]
-helper:
-    echo "hidden linux helper"
-
-# Or comma-separated on one line
 [group('deploy'), confirm, private]
 deploy-prod:
     kubectl apply -f production/
@@ -221,25 +213,14 @@ target := if os() == "macos" {
 
 ## Shebang and Script Recipes
 
-### Shebang Recipes
-
 ```just
-# Python
-analyze:
-    #!/usr/bin/env python3
-    import json
-    print(json.dumps({"status": "ok"}))
-
-# Bash with safety options
+# Shebang recipe - any interpreter
 deploy:
     #!/usr/bin/env bash
     set -euxo pipefail
     echo "Deploying..."
-```
 
-### Script Recipes (v1.33.0)
-
-```just
+# Script recipe (v1.33.0) - uses set script-interpreter
 set script-interpreter := ['uv', 'run', '--script']
 
 [script]
@@ -249,52 +230,35 @@ hello:
 
 ## Settings Reference
 
+Most commonly used settings:
+
 ```just
 set shell := ["bash", "-uc"]              # Shell for recipes
-set windows-shell := ["pwsh", "-Command"] # Windows-specific shell
 set dotenv-load                           # Load .env file
-set dotenv-filename := ".env.local"       # Custom .env filename
-set dotenv-path := "/path/to/.env"        # Specific .env path
-set dotenv-required                       # Error if .env missing
 set export                                # Export all vars as env vars
-set positional-arguments                  # Enable positional args globally
 set quiet                                 # Suppress command echoing
+set positional-arguments                  # Enable positional args globally
 set fallback                              # Search parent dirs for justfile
-set ignore-comments                       # Ignore # in recipe lines
 set unstable                              # Enable unstable features
-set working-directory := "subdir"         # Change working directory
-set script-interpreter := ['sh', '-eu']   # Interpreter for [script] recipes
 ```
+
+See **references/just-docs.md** section 3 for the complete settings reference including dotenv options, Windows shell config, and working directory settings.
 
 ## Constants (v1.37.0+)
 
-Built-in constants for terminal styling and utilities:
+Built-in constants for paths, hex sets, and terminal styling:
 
 ```just
-# Path separators
-PATH_SEP       # "/" on Unix, "\" on Windows
-PATH_VAR_SEP   # ":" on Unix, ";" on Windows
-
-# Hex character sets
-HEX, HEXLOWER  # "0123456789abcdef"
-HEXUPPER       # "0123456789ABCDEF"
-
-# Terminal colors
-RED, GREEN, BLUE, YELLOW, CYAN, MAGENTA, WHITE, BLACK
-BG_RED, BG_GREEN, BG_BLUE, BG_YELLOW, BG_CYAN, BG_MAGENTA, BG_WHITE, BG_BLACK
-
-# Terminal styles
-BOLD, ITALIC, UNDERLINE, INVERT, HIDE, STRIKETHROUGH
-NORMAL         # Reset styling
-CLEAR          # Clear screen
+PATH_SEP           # "/" on Unix, "\" on Windows
+PATH_VAR_SEP       # ":" on Unix, ";" on Windows
+HEX, HEXLOWER      # "0123456789abcdef"
+HEXUPPER           # "0123456789ABCDEF"
+# Colors: RED, GREEN, BLUE, YELLOW, CYAN, MAGENTA, WHITE, BLACK (and BG_ variants)
+# Styles: BOLD, ITALIC, UNDERLINE, INVERT, HIDE, STRIKETHROUGH
+NORMAL             # Reset styling
 ```
 
-Usage:
-```just
-@status:
-    echo '{{GREEN}}Success!{{NORMAL}}'
-    echo '{{BOLD}}{{RED}}Error{{NORMAL}}'
-```
+Usage: `echo '{{GREEN}}Success!{{NORMAL}}'`
 
 ## Common Patterns
 
@@ -308,22 +272,6 @@ default:
 [default]
 help:
     @just --list --list-heading $'Commands:\n'
-```
-
-### Subcommand Pattern
-
-```just
-# Usage: just db migrate, just db seed, just db reset
-[group('database')]
-db command="":
-    #!/usr/bin/env bash
-    case "{{command}}" in
-        migrate) ./db migrate ;;
-        seed) ./db seed ;;
-        reset) ./db reset ;;
-        "") just --list | grep -A100 '\[database\]' ;;
-        *) echo "Unknown: {{command}}" && exit 1 ;;
-    esac
 ```
 
 ### Cross-Platform Recipes
@@ -484,6 +432,26 @@ also-correct:
     pwd
 ```
 
+### Recipe with Wrong Indentation (Tabs vs Spaces)
+
+**Cause:** Mixing tabs and spaces in recipe bodies, or using the wrong one.
+
+Just requires consistent indentation within a recipe. By default, recipes use spaces, but tabs also work -- just don't mix them.
+
+```just
+# Wrong - mixed tabs and spaces
+build:
+    echo "step 1"
+	echo "step 2"   # This line uses a tab!
+
+# Correct - consistent indentation
+build:
+    echo "step 1"
+    echo "step 2"
+```
+
+**Tip:** Run `just --fmt` to auto-fix indentation issues. Use `just --fmt --check` to detect them without modifying the file.
+
 ### Command Output Not Captured
 
 Use backticks for command substitution, not `$(...)`:
@@ -500,21 +468,17 @@ version := `cat VERSION`
 
 ```bash
 just                    # Run default recipe
-just recipe             # Run specific recipe
-just recipe arg1 arg2   # Pass arguments
+just recipe arg1 arg2   # Run recipe with arguments
 just var=value recipe   # Override variable
-just --list             # List recipes
-just --list --unsorted  # List in file order
+just --list             # List recipes (--unsorted for file order)
 just --groups           # List groups
 just --show recipe      # Show recipe source
-just --summary          # Compact recipe list
 just --dump             # Dump parsed justfile
-just --evaluate         # Evaluate and print variables
-just --fmt              # Format justfile
-just --check            # Check for errors without running
+just --fmt              # Format justfile (--check to verify only)
 just -f path/justfile   # Use specific justfile
-just -d directory       # Set working directory
 ```
+
+See **references/just-docs.md** section 8 for the full CLI reference.
 
 ## Resources
 
@@ -524,9 +488,3 @@ See **references/just-docs.md** for:
 - Advanced module patterns
 - String escape sequences
 - Grammar specification
-
-### Documentation Links
-
-- Official manual: https://just.systems/man/en/
-- GitHub: https://github.com/casey/just
-- Cheatsheet: https://cheatography.com/linux-china/cheat-sheets/justfile/
