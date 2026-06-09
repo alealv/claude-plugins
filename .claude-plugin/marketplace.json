@@ -22,6 +22,14 @@
       "source": "./plugins/zellij-tools",
       "category": "development",
       "tags": ["zellij", "terminal", "multiplexer", "session"]
+    },
+    {
+      "name": "knowledge-arch",
+      "description": "Scaffold and audit a layered agent-knowledge architecture (AGENTS.md/CLAUDE.md/rules/skills/memory/constitution) with graph-first code and Codex parity",
+      "version": "0.1.0",
+      "source": "./plugins/knowledge-arch",
+      "category": "development",
+      "tags": ["agents-md", "claude-md", "knowledge-architecture", "constitution", "graphify", "memory", "codex"]
     }
   ]
 }

@@ -1,0 +1,20 @@
+{
+  "name": "knowledge-arch",
+  "displayName": "Knowledge Architecture",
+  "version": "0.1.0",
+  "description": "Scaffold and audit a layered agent-knowledge architecture across repos: graph-first code structure (Graphify), Diataxis docs, a lean AGENTS.md (+ CLAUDE.md @import wrapper), path-scoped .claude/rules, skills for procedures, machine-local auto-memory, and a versioned constitution. Required rules live in committed files; memory is recall, not a source of truth. Codex parity via nested AGENTS.md.",
+  "author": {
+    "name": "Alejandro Gaston Alvarez"
+  },
+  "license": "MIT",
+  "keywords": [
+    "agents-md",
+    "claude-md",
+    "knowledge-architecture",
+    "constitution",
+    "graphify",
+    "memory",
+    "codex",
+    "documentation"
+  ]
+}
