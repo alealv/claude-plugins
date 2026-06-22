@@ -1,0 +1,8 @@
+{
+  "name": "git-isolated-commit",
+  "version": "1.0.0",
+  "description": "Commit in-progress changes to a target branch via a throwaway git worktree — safe when a parallel agent has hopped HEAD or the working tree is dirty",
+  "author": {
+    "name": "aalvarez"
+  }
+}

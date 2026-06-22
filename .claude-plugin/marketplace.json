@@ -30,6 +30,14 @@
       "source": "./plugins/knowledge-arch",
       "category": "development",
       "tags": ["agents-md", "claude-md", "knowledge-architecture", "constitution", "graphify", "memory", "codex"]
+    },
+    {
+      "name": "git-isolated-commit",
+      "description": "Commit in-progress changes to a target branch via a throwaway git worktree — safe when a parallel agent has hopped HEAD or the working tree is dirty",
+      "version": "1.0.0",
+      "source": "./plugins/git-isolated-commit",
+      "category": "development",
+      "tags": ["git", "worktree", "merge", "parallel-agents", "commit"]
     }
   ]
 }
