@@ -38,6 +38,14 @@
       "source": "./plugins/git-isolated-commit",
       "category": "development",
       "tags": ["git", "worktree", "merge", "parallel-agents", "commit"]
+    },
+    {
+      "name": "sdd-flow",
+      "description": "Loop-native spec-driven development: a wizard of three autonomous loops (spec → plan+review → TDD implement) with human gates between phases",
+      "version": "0.1.0",
+      "source": "./plugins/sdd-flow",
+      "category": "development",
+      "tags": ["spec-driven-development", "speckit", "loop", "grilling", "code-review", "tdd"]
     }
   ]
 }
