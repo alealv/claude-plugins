@@ -1,6 +1,6 @@
 # SDD-Flow — loop-native spec-driven development orchestrator
 
-> **Status:** spec / design v2 (2026-06-22). Rewritten **from scratch, tool-agnostic** — first we design the *ideal* pipeline (phases, artifact contracts, where humans gate vs where loops run autonomously), and only afterward map each piece to reusable skills. The previous draft was contaminated by the tools; this one inverts the order.
+> **Status:** spec / design v2 (2026-06-22), **all 3 skills BUILT & validated 2026-06-23** (see "Build status" below). Rewritten **from scratch, tool-agnostic** — first we design the *ideal* pipeline (phases, artifact contracts, where humans gate vs where loops run autonomously), and only afterward map each piece to reusable skills. The previous draft was contaminated by the tools; this one inverts the order.
 > **Scope note:** this describes *what the pipeline must be and do* first; the concrete skill mapping is at the end ("Skill / tool mapping", resolved 2026-06-22). We **write 3 skills** (`sdd-flow`, `plan-review-panel`, `grilling`) and **reuse** the rest (`deep-research`, `tdd`, `to-issues`, `loop`, `systematic-debugging`, Spec Kit, …).
 
 ## Goal
@@ -127,13 +127,36 @@ Every autonomous loop MUST carry all three: **(1)** a verifiable **done-check**,
 
 The pipeline shape (locked above) drove these choices — never the reverse. Inventory was taken against the *actual* environment, not assumed.
 
-### What we WRITE (3 deliverables → ship to claude-tools)
+### What we WRITE (3 deliverables → shipped to claude-tools) — ✅ BUILT
 
-| Skill | Invocation | What it is |
-|-------|-----------|-----------|
-| **`sdd-flow`** | user-invoked (orchestrator) | The wizard-of-loops: 3 phases, their boundary gates, the Constitution precondition, the Spec-Kit-or-replicate bridge, GOAL.md as the implement done-check. The only human-invoked entry. |
-| **`plan-review-panel`** | model-invoked (discipline) | The Phase 2 **adaptive cross-tool** reviewer: host reviewers always + Codex (or Claude) if enabled; converge on the same unchanged version; host-only-with-lenses as floor. |
-| **`grilling`** | model-invoked (discipline) | Custom adversarial-interview skill, **written from scratch** based on mattpocock's `grilling` + Loop-Library **Devil's-Advocate #32** (critic argues the design is wrong; objections logged; resolve or accept-explicitly; stop on same-issue-2×). Drives Phase 1 sharpening and the Phase 2 architecture challenge. |
+All three are built and bundled in `plugins/sdd-flow/`, each authored with the `writing-skills` RED→GREEN→REFACTOR method (a baseline failure was observed with subagents *before* writing the skill), then reviewed by a 3-lens multi-agent panel (craft / spec-faithfulness / operational-usability) whose fixes are folded in.
+
+| Skill | Invocation | Status | What it is |
+|-------|-----------|--------|-----------|
+| **`sdd-flow`** | user-invoked (orchestrator) | ✅ `plugins/sdd-flow/skills/sdd-flow/` | The wizard-of-loops: 3 phases, their boundary gates, the Constitution precondition, the Spec-Kit-or-replicate bridge, GOAL.md as the implement done-check. The only human-invoked entry. |
+| **`plan-review-panel`** | model-invoked (discipline) | ✅ `plugins/sdd-flow/skills/plan-review-panel/` | The Phase 2 **adaptive cross-tool** reviewer: host reviewers always + Codex (or Claude) if enabled; converge on the same unchanged version; host-only-with-lenses as floor. |
+| **`grilling`** | model-invoked (discipline) | ✅ `plugins/sdd-flow/skills/grilling/` | Custom adversarial-interview skill, **written from scratch** based on mattpocock's `grilling` + Loop-Library **Devil's-Advocate #32** (critic argues the design is wrong; objections logged; resolve or accept-explicitly; stop on same-issue-2×). Drives Phase 1 sharpening and the Phase 2 architecture challenge. |
+
+#### Build status & validation (2026-06-23)
+
+| Skill | Baseline (RED) observed | Fix (GREEN) confirmed |
+|-------|-------------------------|-----------------------|
+| `grilling` | agents dump all issues at once + rubber-stamp ("solid/shippable") + offer to do the work | one adversarial question at a time, no rubber-stamp, forces the human to decide; 3/3 converged on the load-bearing issue |
+| `plan-review-panel` | *clean* baseline (no priming) reviews solo, single-pass, `tool_uses: 0` — no cross-tool, no convergence | orchestrates distinct-lens reviewers + Codex, converges on the same version, discloses host-only floor honestly |
+| `sdd-flow` | without it, agents skip the constitution + downstream gates and just brainstorm Phase 1 | constitution precondition first, stops at every gate, wires the sub-skills, never collapses phases |
+
+> **Method note (dogfood):** two `plan-review-panel` / `sdd-flow` baselines first *passed by accident* — once because the prompt primed Codex, once because the test ran in the wrong repo. The `writing-skills` no-guidance-control discipline caught both. Lesson baked in: `sdd-flow` **reuses `superpowers:brainstorming`** for the Phase-1 design loop instead of reimplementing "one question at a time."
+
+#### Multi-agent review fixes folded into the skills
+
+- **`sdd-flow` description** rewritten to triggers-only (was leaking the workflow → SDO violation).
+- **`loop` name collision** resolved: Phase 3 is a *self-paced goal loop* (`loop` with **no interval**), not the interval scheduler.
+- **Gate mechanics** made concrete: present → ask → **end the turn and wait**; silence/ambiguity = NO-GO; never self-approve.
+- **Fixed artifact paths** named (`.specify/memory/constitution.md`, `specs/<feature>/{spec,plan,tasks,GOAL}.md`).
+- **Degradation rule** added: any missing REQUIRED sub-skill or tool (Spec Kit, `to-issues`, `codex`, …) → do its work inline + state the degradation; never stall or silently skip.
+- **Independence mechanized:** `plan-review-panel` reviewers and the Phase-3 checker are **separate subagents with clean context** (one agent role-playing lenses ≠ a panel).
+- **Source-validation made cross-cutting:** `deep-research` also fires on novel Phase-2 tech/architecture decisions, not Phase-1 only.
+- **`codex exec "<prompt>"`** verified as the correct non-interactive invocation.
 
 ### What we REUSE (installed — verified present)
 
