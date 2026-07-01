@@ -1,4 +1,4 @@
-# claude-tools — Agent Guide
+# claude-plugins — Agent Guide
 
 Single source of truth for AI coding agents in this repo. `CLAUDE.md` is a symlink to this file, so both Claude Code and AGENTS.md-aware tools read it. Explicit instructions in chat always win.
 
@@ -12,7 +12,11 @@ Single source of truth for AI coding agents in this repo. `CLAUDE.md` is a symli
 .claude-plugin/marketplace.json  # Marketplace catalog ($schema-validated)
 plugins/
   justfile-expert/               # Just task runner guidance (skill + references)
-  zellij-tools/                  # Zellij terminal multiplexer control (skill + shell tools)
+  zellij-tools/                  # Zellij multiplexer control (skill + shell tools)
+  knowledge-arch/                # Layered agent-knowledge architecture (skills + command + hook)
+  git-isolated-commit/           # Commit via a throwaway git worktree (skill)
+  sdd-flow/                      # Spec-driven development orchestrator (3 skills)
+specs/                           # Design docs (e.g. specs/sdd-flow/spec.md + research/)
 ```
 
 Each plugin contains `.claude-plugin/plugin.json` (required manifest) and one or more of:
